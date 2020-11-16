@@ -1,9 +1,6 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
-import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
-import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
-import dev.volix.rewinside.odyssey.hagrid.HagridService;
-import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
+import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
@@ -22,7 +19,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 /**
  * @author Tobias Büser
  */
-public class KafkaDownstreamHandler implements DownstreamHandler {
+public class KafkaDownstreamHandler extends UglyHagridListenerRegistry implements DownstreamHandler {
 
     private final HagridService service;
     private final Properties properties;
@@ -56,32 +53,9 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
 
     @Override
     public <T> void receive(String topic, HagridPacket<T> packet) {
-
-    }
-
-    @Override
-    public boolean hasListener(String topic) {
-        return false;
-    }
-
-    @Override
-    public void registerListener() {
-
-    }
-
-    @Override
-    public void unregisterListener() {
-
-    }
-
-    @Override
-    public void getListener() {
-
-    }
-
-    @Override
-    public void await(String topic) {
-
+        System.out.println("Received packet from '" + topic + "': " + packet.getId());
+        // notify listeners
+        super.executeListeners(topic, Direction.DOWNSTREAM, packet.getPayload());
     }
 
     private static class ConsumerTask extends StoppableTask {
@@ -103,7 +77,7 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
             for (ConsumerRecord<String, Packet> record : records) {
                 String recordTopic = record.topic();
                 HagridTopic<?> registeredTopic = this.service.getTopic(recordTopic);
-                if(registeredTopic == null) {
+                if (registeredTopic == null) {
                     // we just silently do nothing ..
                     return 0;
                 }

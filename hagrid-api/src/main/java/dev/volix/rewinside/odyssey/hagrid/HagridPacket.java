@@ -32,4 +32,13 @@ public class HagridPacket<T> {
         return payload;
     }
 
+    @Override
+    public String toString() {
+        return "HagridPacket{" +
+            "id='" + id + '\'' +
+            ", requestId='" + requestId + '\'' +
+            ", payload=" + payload +
+            '}';
+    }
+
 }

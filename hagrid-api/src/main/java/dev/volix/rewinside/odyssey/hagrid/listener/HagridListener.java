@@ -1,23 +1,65 @@
 package dev.volix.rewinside.odyssey.hagrid.listener;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.function.Consumer;
 
 /**
  * @author Tobias Büser
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface HagridListener {
+public class HagridListener<T> {
 
-    String topic();
+    private final String topic;
+    private final Direction direction;
+    private final Class<T> payloadClass;
+    private final int priority;
 
-    Direction direction();
+    private final Consumer<T> payloadConsumer;
 
-    Class<?> payload();
+    public HagridListener(String topic, Direction direction, Class<T> payloadClass, Consumer<T> payloadConsumer, int priority) {
+        this.topic = topic;
+        this.direction = direction;
+        this.payloadClass = payloadClass;
+        this.priority = priority;
+        this.payloadConsumer = payloadConsumer;
+    }
 
-    int priority();
+    public HagridListener(String topic, Direction direction, Class<T> payloadClass, Consumer<T> payloadConsumer) {
+        this(topic, direction, payloadClass, payloadConsumer, Priority.MEDIUM);
+    }
+
+    public HagridListener(String topic, Class<T> payloadClass, Consumer<T> payloadConsumer) {
+        this(topic, Direction.DOWNSTREAM, payloadClass, payloadConsumer);
+    }
+
+    public HagridListener(String topic, Class<T> payloadClass, Consumer<T> payloadConsumer, int priority) {
+        this(topic, Direction.DOWNSTREAM, payloadClass, payloadConsumer, priority);
+    }
+
+    public HagridListener(HagridListens annotation, Class<T> payloadClass, Consumer<T> payloadConsumer) {
+        this(annotation.topic(), annotation.direction(), payloadClass, payloadConsumer, annotation.priority());
+    }
+
+    public void execute(Object payload) {
+        if(payloadConsumer != null) payloadConsumer.accept((T) payload);
+    }
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
+
+    public Class<T> getPayloadClass() {
+        return payloadClass;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    public Consumer<T> getPayloadConsumer() {
+        return payloadConsumer;
+    }
 
 }

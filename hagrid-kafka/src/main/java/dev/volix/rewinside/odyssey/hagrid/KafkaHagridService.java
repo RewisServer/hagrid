@@ -1,18 +1,15 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
-import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
-import dev.volix.rewinside.odyssey.hagrid.HagridSerdes;
-import dev.volix.rewinside.odyssey.hagrid.HagridService;
-import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
-import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.util.Registry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
@@ -28,16 +25,23 @@ public class KafkaHagridService implements HagridService {
     private final KafkaUpstreamHandler upstreamHandler;
     private final KafkaDownstreamHandler downstreamHandler;
 
-    public KafkaHagridService() {
+    public KafkaHagridService(String address, String groupId) {
         this.properties = new Properties();
-        properties.put("bootstrap.servers", "localhost:9092");
-        properties.put("request.timeout.ms", 3000);
-        properties.put("default.api.timeout.ms", 3000);
+        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, address);
+        properties.put(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, 3000);
+        properties.put(CommonClientConfigs.DEFAULT_API_TIMEOUT_MS_CONFIG, 3000);
+
+        properties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+        properties.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, "");
+        properties.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "");
+        properties.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, "");
+        properties.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, "");
+        properties.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, "");
 
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaPacketSerializer.class);
 
-        properties.put(ConsumerConfig.GROUP_ID_CONFIG, "cock");
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaPacketDeserializer.class);
 

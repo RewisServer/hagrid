@@ -1,10 +1,7 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
 import com.google.protobuf.ByteString;
-import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
-import dev.volix.rewinside.odyssey.hagrid.HagridService;
-import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
-import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import java.util.Properties;
 import java.util.UUID;
@@ -15,7 +12,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 /**
  * @author Tobias Büser
  */
-public class KafkaUpstreamHandler implements UpstreamHandler {
+public class KafkaUpstreamHandler extends UglyHagridListenerRegistry implements UpstreamHandler {
 
     private final HagridService service;
 
@@ -48,31 +45,9 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
                 .build())
         );
         producer.close();
-    }
 
-    @Override
-    public boolean hasListener(String topic) {
-        return false;
-    }
-
-    @Override
-    public void registerListener() {
-
-    }
-
-    @Override
-    public void unregisterListener() {
-
-    }
-
-    @Override
-    public void getListener() {
-
-    }
-
-    @Override
-    public void await(String topic) {
-
+        // notify listeners
+        super.executeListeners(topic, Direction.UPSTREAM, payload);
     }
 
 }
