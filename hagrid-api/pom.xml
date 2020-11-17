@@ -13,6 +13,13 @@
 
   <dependencies>
     <dependency>
+      <groupId>dev.volix.lib</groupId>
+      <artifactId>grape-api</artifactId>
+      <version>[0.0,)</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>dev.volix.rewinside.odyssey.hagrid.protocol</groupId>
       <artifactId>orchestration</artifactId>
       <version>0.1.0</version>

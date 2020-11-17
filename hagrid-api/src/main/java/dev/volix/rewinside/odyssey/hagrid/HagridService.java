@@ -1,9 +1,11 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
+import dev.volix.lib.grape.Service;
+
 /**
  * @author Tobias Büser
  */
-public interface HagridService extends HagridTopicRegistry {
+public interface HagridService extends HagridTopicRegistry, Service {
 
     void initialize();
 

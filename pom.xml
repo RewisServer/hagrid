@@ -8,7 +8,7 @@
   <version>0.1.0</version>
   <modules>
     <module>hagrid-api</module>
-      <module>hagrid-kafka</module>
+    <module>hagrid-kafka</module>
   </modules>
 
   <build>
