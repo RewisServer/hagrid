@@ -2,7 +2,9 @@ package dev.volix.rewinside.odyssey.hagrid;
 
 import com.google.protobuf.ByteString;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
+import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
+import dev.volix.rewinside.odyssey.hagrid.protocol.Status;
 import java.util.Properties;
 import java.util.UUID;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -42,12 +44,16 @@ public class KafkaUpstreamHandler extends UglyHagridListenerRegistry implements 
                 .setPayload(packetPayload)
                 .setId(UUID.randomUUID().toString())
                 .setRequestId(packet.getRequestId())
+                .setStatus(Status.newBuilder()
+                    .setCode(packet.getStatus().getCode())
+                    .setMessage(packet.getStatus().getMessage())
+                    .build())
                 .build())
         );
         producer.close();
 
         // notify listeners
-        super.executeListeners(topic, Direction.UPSTREAM, payload);
+        super.executeListeners(topic, Direction.UPSTREAM, new HagridContext(packet, topic), payload);
     }
 
 }

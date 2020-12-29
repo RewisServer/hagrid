@@ -8,16 +8,19 @@ public class HagridPacket<T> {
     private final String id;
     private final String requestId;
 
+    private final Status status;
+
     private final T payload;
 
-    public HagridPacket(String id, String requestId, T payload) {
+    public HagridPacket(String id, String requestId, Status status, T payload) {
         this.id = id;
         this.requestId = requestId;
+        this.status = status;
         this.payload = payload;
     }
 
-    public HagridPacket(String requestId, T payload) {
-        this(null, requestId, payload);
+    public HagridPacket(String requestId, Status status, T payload) {
+        this(null, requestId, status, payload);
     }
 
     public String getId() {
@@ -26,6 +29,10 @@ public class HagridPacket<T> {
 
     public String getRequestId() {
         return requestId;
+    }
+
+    public Status getStatus() {
+        return status;
     }
 
     public T getPayload() {

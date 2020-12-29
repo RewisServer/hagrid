@@ -7,7 +7,7 @@ import java.util.List;
  */
 public interface HagridListenerRegistry {
 
-    <T> void executeListeners(String topic, Direction direction, T payload);
+    <T> void executeListeners(String topic, Direction direction, HagridContext context, T payload);
 
     <T> boolean hasListener(String topic, Class<T> payloadClass);
 

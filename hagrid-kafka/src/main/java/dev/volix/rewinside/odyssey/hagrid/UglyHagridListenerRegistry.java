@@ -1,6 +1,7 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
+import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListens;
@@ -24,14 +25,14 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
     private final Map<String, List<HagridListener<?>>> listenerRegistry = new HashMap<>();
 
     @Override
-    public <T> void executeListeners(String topic, Direction direction, T payload) {
+    public <T> void executeListeners(String topic, Direction direction, HagridContext context, T payload) {
         Class<T> payloadClass = (Class<T>) payload.getClass();
         List<HagridListener<?>> listeners = this.getListener(topic, payloadClass);
 
         listeners.sort(Comparator.comparingInt(HagridListener::getPriority));
         for (HagridListener<?> listener : listeners) {
             if(listener.getDirection() != direction) continue;
-            listener.execute(payload);
+            listener.execute(payload, context);
         }
     }
 
@@ -60,9 +61,9 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
             if(declaredMethod.getParameterCount() != 1) continue;
             Class<?> parameter = declaredMethod.getParameterTypes()[0];
 
-            this.registerListener(new HagridListener<>(annotation, parameter, payload -> {
+            this.registerListener(new HagridListener<>(annotation, parameter, (payload, context) -> {
                 try {
-                    declaredMethod.invoke(containingInstance, payload);
+                    declaredMethod.invoke(containingInstance, payload, context);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     // ignore, dont execute then ..
                 }

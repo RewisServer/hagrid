@@ -1,6 +1,7 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
+import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
@@ -53,9 +54,8 @@ public class KafkaDownstreamHandler extends UglyHagridListenerRegistry implement
 
     @Override
     public <T> void receive(String topic, HagridPacket<T> packet) {
-        System.out.println("Received packet from '" + topic + "': " + packet.getId());
         // notify listeners
-        super.executeListeners(topic, Direction.DOWNSTREAM, packet.getPayload());
+        super.executeListeners(topic, Direction.DOWNSTREAM, new HagridContext(packet, topic), packet.getPayload());
     }
 
     private static class ConsumerTask extends StoppableTask {
@@ -89,7 +89,14 @@ public class KafkaDownstreamHandler extends UglyHagridListenerRegistry implement
                     packetPayload.getValue().toByteArray()
                 );
 
-                this.handler.receive(recordTopic, new HagridPacket<>(packet.getId(), packet.getRequestId(), payload));
+                Status status = new Status(packet.getStatus().getCode(), packet.getStatus().getMessage());
+
+                this.handler.receive(recordTopic, new HagridPacket<>(
+                    packet.getId(),
+                    packet.getRequestId(),
+                    status,
+                    payload)
+                );
             }
             return 0;
         }
