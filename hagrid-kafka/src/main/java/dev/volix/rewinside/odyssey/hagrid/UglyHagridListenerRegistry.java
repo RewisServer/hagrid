@@ -58,7 +58,8 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
             if(annotation == null) continue;
 
             if(!declaredMethod.getReturnType().equals(void.class)) continue;
-            if(declaredMethod.getParameterCount() != 1) continue;
+            if(declaredMethod.getParameterCount() != 2) continue;
+            if(declaredMethod.getParameterTypes()[1] != HagridContext.class) continue;
             Class<?> parameter = declaredMethod.getParameterTypes()[0];
 
             this.registerListener(new HagridListener<>(annotation, parameter, (payload, context) -> {
