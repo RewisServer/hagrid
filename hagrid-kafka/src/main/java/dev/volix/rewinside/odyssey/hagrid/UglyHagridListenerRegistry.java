@@ -31,7 +31,7 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
 
         listeners.sort(Comparator.comparingInt(HagridListener::getPriority));
         for (HagridListener<?> listener : listeners) {
-            if(listener.getDirection() != direction) continue;
+            if (listener.getDirection() != direction) continue;
             listener.execute(payload, context);
         }
     }
@@ -55,11 +55,11 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
         Class<?> clazz = containingInstance.getClass();
         for (Method declaredMethod : clazz.getDeclaredMethods()) {
             HagridListens annotation = declaredMethod.getAnnotation(HagridListens.class);
-            if(annotation == null) continue;
+            if (annotation == null) continue;
 
-            if(!declaredMethod.getReturnType().equals(void.class)) continue;
-            if(declaredMethod.getParameterCount() != 2) continue;
-            if(declaredMethod.getParameterTypes()[1] != HagridContext.class) continue;
+            if (!declaredMethod.getReturnType().equals(void.class)) continue;
+            if (declaredMethod.getParameterCount() != 2) continue;
+            if (declaredMethod.getParameterTypes()[1] != HagridContext.class) continue;
             Class<?> parameter = declaredMethod.getParameterTypes()[0];
 
             this.registerListener(new HagridListener<>(annotation, parameter, (payload, context) -> {
@@ -70,6 +70,13 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
                 }
             }));
         }
+    }
+
+    @Override
+    public <T> void unregisterListener(HagridListener<T> listener) {
+        List<HagridListener<?>> listeners = listenerRegistry.get(getKeyFrom(listener.getTopic(), listener.getPayloadClass()));
+        if (listeners == null) return;
+        listeners.remove(listener);
     }
 
     @Override

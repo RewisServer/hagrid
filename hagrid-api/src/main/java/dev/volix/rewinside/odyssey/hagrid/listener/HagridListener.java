@@ -39,7 +39,9 @@ public class HagridListener<T> {
     }
 
     public void execute(Object payload, HagridContext context) {
-        if(packetConsumer != null) packetConsumer.accept((T) payload, context);
+        BiConsumer<T, HagridContext> consumer = this.getPacketConsumer();
+
+        if(consumer != null) consumer.accept((T) payload, context);
     }
 
     public String getTopic() {

@@ -15,6 +15,8 @@ public interface HagridListenerRegistry {
 
     void registerListeners(Object containingInstance);
 
+    <T> void unregisterListener(HagridListener<T> listener);
+
     <T> void unregisterListener(String topic, Class<T> payloadClass);
 
     void unregisterListener(String topic);
