@@ -4,6 +4,7 @@ import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
@@ -14,6 +15,7 @@ public class HagridDuplexWizard {
     private final UpstreamHandler upstreamHandler;
     private final DownstreamHandler downstreamHandler;
 
+    private final String id = UUID.randomUUID().toString();
     private String topic;
     private String key = "";
     private String requestId = "";
@@ -55,13 +57,11 @@ public class HagridDuplexWizard {
     }
 
     public <T> HagridDuplexWizard waitsFor(Class<T> payloadClass, BiConsumer<T, HagridContext> packetConsumer) {
-        if (this.requestId == null || this.requestId.isEmpty()) return this;
-
         HagridListener<T> listener = new HagridListener<T>(this.topic, Direction.DOWNSTREAM, payloadClass, null) {
             @Override
             public BiConsumer<T, HagridContext> getPacketConsumer() {
                 return (t, context) -> {
-                    if(!context.getId().equals(requestId)) return;
+                    if(!context.getRequestId().equals(id)) return;
 
                     packetConsumer.accept(t, context);
                     downstreamHandler.unregisterListener(this);
@@ -73,7 +73,7 @@ public class HagridDuplexWizard {
     }
 
     public <T> void send() {
-        this.upstreamHandler.send(this.topic, this.key, new HagridPacket<>(this.requestId, status, (T) this.payload));
+        this.upstreamHandler.send(this.topic, this.key, new HagridPacket<>(this.id, this.requestId, status, (T) this.payload));
     }
 
 }

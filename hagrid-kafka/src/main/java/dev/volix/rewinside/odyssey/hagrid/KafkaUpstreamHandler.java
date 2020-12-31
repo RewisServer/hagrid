@@ -6,7 +6,6 @@ import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Status;
 import java.util.Properties;
-import java.util.UUID;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -42,7 +41,7 @@ public class KafkaUpstreamHandler extends UglyHagridListenerRegistry implements 
         producer.send(new ProducerRecord<>(topic, key,
             Packet.newBuilder()
                 .setPayload(packetPayload)
-                .setId(UUID.randomUUID().toString())
+                .setId(packet.getId())
                 .setRequestId(packet.getRequestId())
                 .setStatus(Status.newBuilder()
                     .setCode(packet.getStatus().getCode())

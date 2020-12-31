@@ -27,7 +27,7 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
     @Override
     public <T> void executeListeners(String topic, Direction direction, HagridContext context, T payload) {
         Class<T> payloadClass = (Class<T>) payload.getClass();
-        List<HagridListener<?>> listeners = this.getListener(topic, payloadClass);
+        List<HagridListener<?>> listeners = new ArrayList<>(this.getListener(topic, payloadClass));
 
         listeners.sort(Comparator.comparingInt(HagridListener::getPriority));
         for (HagridListener<?> listener : listeners) {
