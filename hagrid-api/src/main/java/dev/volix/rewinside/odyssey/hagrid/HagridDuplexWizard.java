@@ -42,6 +42,11 @@ public class HagridDuplexWizard {
         return this;
     }
 
+    public HagridDuplexWizard respondsTo(HagridContext context) {
+        this.topic(context.getTopic());
+        return respondsTo(context.getId());
+    }
+
     public HagridDuplexWizard status(StatusCode code, String message) {
         this.status = new Status(code, message);
         return this;

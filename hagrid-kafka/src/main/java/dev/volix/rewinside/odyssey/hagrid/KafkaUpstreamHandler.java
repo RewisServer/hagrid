@@ -49,7 +49,6 @@ public class KafkaUpstreamHandler extends UglyHagridListenerRegistry implements 
                     .build())
                 .build())
         );
-        producer.close();
 
         // notify listeners
         super.executeListeners(topic, Direction.UPSTREAM, new HagridContext(packet, topic), payload);

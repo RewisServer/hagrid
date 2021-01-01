@@ -15,6 +15,10 @@ public class Status {
         this.message = message;
     }
 
+    public boolean isOk() {
+        return this.getCode() == StatusCode.OK;
+    }
+
     public StatusCode getCode() {
         return code;
     }
