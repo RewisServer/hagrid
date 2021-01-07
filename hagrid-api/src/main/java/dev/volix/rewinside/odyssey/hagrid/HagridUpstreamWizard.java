@@ -10,10 +10,9 @@ import java.util.function.BiConsumer;
 /**
  * @author Tobias Büser
  */
-public class HagridDuplexWizard {
+public class HagridUpstreamWizard {
 
-    private final UpstreamHandler upstreamHandler;
-    private final DownstreamHandler downstreamHandler;
+    private final HagridService service;
 
     private final String id = UUID.randomUUID().toString();
     private String topic;
@@ -22,46 +21,45 @@ public class HagridDuplexWizard {
     private Status status = new Status(StatusCode.OK, "");
     private Object payload;
 
-    public HagridDuplexWizard(UpstreamHandler upstreamHandler, DownstreamHandler downstreamHandler) {
-        this.upstreamHandler = upstreamHandler;
-        this.downstreamHandler = downstreamHandler;
+    public HagridUpstreamWizard(HagridService service) {
+        this.service = service;
     }
 
-    public HagridDuplexWizard topic(String topic) {
+    public HagridUpstreamWizard topic(String topic) {
         this.topic = topic;
         return this;
     }
 
-    public HagridDuplexWizard key(String key) {
+    public HagridUpstreamWizard key(String key) {
         this.key = key;
         return this;
     }
 
-    public HagridDuplexWizard respondsTo(String requestId) {
+    public HagridUpstreamWizard respondsTo(String requestId) {
         this.requestId = requestId;
         return this;
     }
 
-    public HagridDuplexWizard respondsTo(HagridContext context) {
+    public HagridUpstreamWizard respondsTo(HagridContext context) {
         this.topic(context.getTopic());
         return respondsTo(context.getId());
     }
 
-    public HagridDuplexWizard status(StatusCode code, String message) {
+    public HagridUpstreamWizard status(StatusCode code, String message) {
         this.status = new Status(code, message);
         return this;
     }
 
-    public HagridDuplexWizard status(StatusCode code) {
+    public HagridUpstreamWizard status(StatusCode code) {
         return this.status(code, "");
     }
 
-    public <T> HagridDuplexWizard payload(T payload) {
+    public <T> HagridUpstreamWizard payload(T payload) {
         this.payload = payload;
         return this;
     }
 
-    public <T> HagridDuplexWizard waitsFor(Class<T> payloadClass, BiConsumer<T, HagridContext> packetConsumer) {
+    public <T> HagridUpstreamWizard waitsFor(Class<T> payloadClass, BiConsumer<T, HagridContext> packetConsumer) {
         HagridListener<T> listener = new HagridListener<T>(this.topic, Direction.DOWNSTREAM, payloadClass, null) {
             @Override
             public BiConsumer<T, HagridContext> getPacketConsumer() {
@@ -69,16 +67,16 @@ public class HagridDuplexWizard {
                     if(!context.getRequestId().equals(id)) return;
 
                     packetConsumer.accept(t, context);
-                    downstreamHandler.unregisterListener(this);
+                    service.unregisterListener(this);
                 };
             }
         };
-        this.downstreamHandler.registerListener(listener);
+        this.service.registerListener(listener);
         return this;
     }
 
     public <T> void send() {
-        this.upstreamHandler.send(this.topic, this.key, new HagridPacket<>(this.id, this.requestId, status, (T) this.payload));
+        this.service.upstream().send(this.topic, this.key, new HagridPacket<>(this.id, this.requestId, status, (T) this.payload));
     }
 
 }

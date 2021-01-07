@@ -15,7 +15,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 /**
  * @author Tobias Büser
  */
-public class KafkaHagridService implements HagridService {
+public class KafkaHagridService extends UglyHagridListenerRegistry implements HagridService {
 
     private final Properties properties;
 

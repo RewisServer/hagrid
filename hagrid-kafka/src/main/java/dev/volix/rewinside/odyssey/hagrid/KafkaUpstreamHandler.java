@@ -13,7 +13,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 /**
  * @author Tobias Büser
  */
-public class KafkaUpstreamHandler extends UglyHagridListenerRegistry implements UpstreamHandler {
+public class KafkaUpstreamHandler implements UpstreamHandler {
 
     private final HagridService service;
 
@@ -51,7 +51,7 @@ public class KafkaUpstreamHandler extends UglyHagridListenerRegistry implements 
         );
 
         // notify listeners
-        super.executeListeners(topic, Direction.UPSTREAM, new HagridContext(packet, topic), payload);
+        service.executeListeners(topic, Direction.UPSTREAM, new HagridContext(packet, topic), payload);
     }
 
 }

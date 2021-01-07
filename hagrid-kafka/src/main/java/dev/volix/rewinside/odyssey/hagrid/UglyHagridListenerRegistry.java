@@ -5,6 +5,7 @@ import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListens;
+import dev.volix.rewinside.odyssey.hagrid.listener.Priority;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -53,6 +54,8 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
     @Override
     public void registerListeners(Object containingInstance) {
         Class<?> clazz = containingInstance.getClass();
+        HagridListens clazzAnnotation = clazz.getAnnotation(HagridListens.class);
+
         for (Method declaredMethod : clazz.getDeclaredMethods()) {
             HagridListens annotation = declaredMethod.getAnnotation(HagridListens.class);
             if (annotation == null) continue;
@@ -62,13 +65,23 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
             if (declaredMethod.getParameterTypes()[1] != HagridContext.class) continue;
             Class<?> parameter = declaredMethod.getParameterTypes()[0];
 
-            this.registerListener(new HagridListener<>(annotation, parameter, (payload, context) -> {
+            String topic = clazzAnnotation != null ?
+                clazzAnnotation.topic().isEmpty() ? annotation.topic() : clazzAnnotation.topic()
+                : annotation.topic();
+            Direction direction = clazzAnnotation != null ?
+                clazzAnnotation.direction() == Direction.DOWNSTREAM ? annotation.direction() : clazzAnnotation.direction()
+                : annotation.direction();
+            int priority = clazzAnnotation != null ?
+                clazzAnnotation.priority() == Priority.MEDIUM ? annotation.priority() : clazzAnnotation.priority()
+                : annotation.priority();
+
+            this.registerListener(new HagridListener<>(topic, direction, parameter, (payload, context) -> {
                 try {
                     declaredMethod.invoke(containingInstance, payload, context);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     // ignore, dont execute then ..
                 }
-            }));
+            }, priority));
         }
     }
 

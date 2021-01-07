@@ -1,11 +1,9 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
-import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
-
 /**
  * @author Tobias Büser
  */
-public interface UpstreamHandler extends HagridListenerRegistry {
+public interface UpstreamHandler {
 
     <T> void send(String topic, String key, HagridPacket<T> packet);
 

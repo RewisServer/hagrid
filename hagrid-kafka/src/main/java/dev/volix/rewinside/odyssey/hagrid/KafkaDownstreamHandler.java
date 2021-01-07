@@ -20,7 +20,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 /**
  * @author Tobias Büser
  */
-public class KafkaDownstreamHandler extends UglyHagridListenerRegistry implements DownstreamHandler {
+public class KafkaDownstreamHandler implements DownstreamHandler {
 
     private final HagridService service;
     private final Properties properties;
@@ -55,7 +55,7 @@ public class KafkaDownstreamHandler extends UglyHagridListenerRegistry implement
     @Override
     public <T> void receive(String topic, HagridPacket<T> packet) {
         // notify listeners
-        super.executeListeners(topic, Direction.DOWNSTREAM, new HagridContext(packet, topic), packet.getPayload());
+        service.executeListeners(topic, Direction.DOWNSTREAM, new HagridContext(packet, topic), packet.getPayload());
     }
 
     private static class ConsumerTask extends StoppableTask {
