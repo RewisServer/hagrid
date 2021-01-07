@@ -108,4 +108,9 @@ public class KafkaHagridService extends UglyHagridListenerRegistry implements Ha
         }
     }
 
+    @Override
+    protected HagridService getService() {
+        return this;
+    }
+
 }

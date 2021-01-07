@@ -6,6 +6,7 @@ import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListens;
 import dev.volix.rewinside.odyssey.hagrid.listener.Priority;
+import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -21,9 +22,11 @@ import java.util.stream.Stream;
 /**
  * @author Tobias Büser
  */
-class UglyHagridListenerRegistry implements HagridListenerRegistry {
+abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
 
     private final Map<String, List<HagridListener<?>>> listenerRegistry = new HashMap<>();
+
+    protected abstract HagridService getService();
 
     @Override
     public <T> void executeListeners(String topic, Direction direction, HagridContext context, T payload) {
@@ -65,6 +68,8 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
             if (declaredMethod.getParameterTypes()[1] != HagridContext.class) continue;
             Class<?> parameter = declaredMethod.getParameterTypes()[0];
 
+            // if the enclosing class already contains such an annotation
+            // we can override specific values if necessary
             String topic = clazzAnnotation != null ?
                 clazzAnnotation.topic().isEmpty() ? annotation.topic() : clazzAnnotation.topic()
                 : annotation.topic();
@@ -78,6 +83,18 @@ class UglyHagridListenerRegistry implements HagridListenerRegistry {
             this.registerListener(new HagridListener<>(topic, direction, parameter, (payload, context) -> {
                 try {
                     declaredMethod.invoke(containingInstance, payload, context);
+
+                    // if context is prepared to contain a response
+                    // we automatically send it here.
+                    if (context.hasResponse()) {
+                        Status responseStatus = context.getResponseStatus();
+                        if (responseStatus == null) responseStatus = new Status(StatusCode.OK, "");
+                        Object responsePayload = context.getResponsePayload();
+                        getService().wizard().respondsTo(context)
+                            .status(responseStatus.getCode(), responseStatus.getMessage())
+                            .payload(responsePayload)
+                            .send();
+                    }
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     // ignore, dont execute then ..
                 }

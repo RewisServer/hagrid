@@ -84,11 +84,13 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
                 Packet packet = record.value();
 
                 Packet.Payload packetPayload = packet.getPayload();
-                Object payload = registeredTopic.getSerdes().deserialize(
-                    packetPayload.getTypeUrl(),
-                    packetPayload.getValue().toByteArray()
-                );
+                byte[] payloadData = packetPayload.getValue().toByteArray();
 
+                Object payload = payloadData.length == 0 ? null :
+                    registeredTopic.getSerdes().deserialize(
+                        packetPayload.getTypeUrl(),
+                        packetPayload.getValue().toByteArray()
+                    );
                 Status status = new Status(packet.getStatus().getCode(), packet.getStatus().getMessage());
 
                 this.handler.receive(recordTopic, new HagridPacket<>(

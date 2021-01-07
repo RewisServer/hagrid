@@ -32,8 +32,11 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
             throw new IllegalArgumentException("Given topic has to be registered first!");
         }
 
+        // TODO also we need a `defaultSerdes` which is protobuf for serializing an empty payload.
         T payload = packet.getPayload();
-        Packet.Payload packetPayload = Packet.Payload.newBuilder()
+        Packet.Payload packetPayload = payload == null
+            ? Packet.Payload.newBuilder().setValue(ByteString.copyFrom(new byte[] {})).build()
+            : Packet.Payload.newBuilder()
             .setTypeUrl(payload.getClass().getTypeName())
             .setValue(ByteString.copyFrom(registeredTopic.getSerdes().serialize(payload)))
             .build();
