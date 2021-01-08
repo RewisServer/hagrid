@@ -54,7 +54,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
         );
 
         // notify listeners
-        service.executeListeners(topic, Direction.UPSTREAM, new HagridContext(packet, topic), payload);
+        service.executeListeners(topic, Direction.UPSTREAM, new HagridContext(packet, topic), packet);
     }
 
 }

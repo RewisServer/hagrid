@@ -10,14 +10,11 @@ import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Tobias Büser
@@ -29,29 +26,35 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
     protected abstract HagridService getService();
 
     @Override
-    public <T> void executeListeners(String topic, Direction direction, HagridContext context, T payload) {
-        Class<T> payloadClass = (Class<T>) payload.getClass();
+    public <T> void executeListeners(String topic, Direction direction, HagridContext context, HagridPacket<T> packet) {
+        Class<T> payloadClass = packet.getPayload() == null ? null : (Class<T>) packet.getPayload().getClass();
         List<HagridListener<?>> listeners = new ArrayList<>(this.getListener(topic, payloadClass));
 
         listeners.sort(Comparator.comparingInt(HagridListener::getPriority));
         for (HagridListener<?> listener : listeners) {
-            if (listener.getDirection() != direction) continue;
-            listener.execute(payload, context);
+            if (listener.getDirection() != null && listener.getDirection() != direction) continue;
+            if (listener.getPayloadClass() == HagridPacket.class) {
+                listener.execute(packet, context);
+                continue;
+            }
+            listener.execute(packet.getPayload(), context);
         }
     }
 
     @Override
     public <T> boolean hasListener(String topic, Class<T> payloadClass) {
-        return this.listenerRegistry.containsKey(getKeyFrom(topic, payloadClass));
+        List<HagridListener<?>> listeners = listenerRegistry.get(topic);
+        if (listeners == null || listeners.isEmpty()) return false;
+
+        return listeners.stream().anyMatch(hagridListener ->
+            hagridListener.getPayloadClass() == HagridPacket.class || hagridListener.getPayloadClass().equals(payloadClass));
     }
 
     @Override
     public <T> void registerListener(HagridListener<T> listener) {
-        String key = getKeyFrom(listener.getTopic(), listener.getPayloadClass());
-
-        List<HagridListener<?>> listeners = listenerRegistry.getOrDefault(key, new ArrayList<>());
+        List<HagridListener<?>> listeners = listenerRegistry.getOrDefault(listener.getTopic(), new ArrayList<>());
         listeners.add(listener);
-        listenerRegistry.put(key, listeners);
+        listenerRegistry.put(listener.getTopic(), listeners);
     }
 
     @Override
@@ -104,37 +107,36 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
 
     @Override
     public <T> void unregisterListener(HagridListener<T> listener) {
-        List<HagridListener<?>> listeners = listenerRegistry.get(getKeyFrom(listener.getTopic(), listener.getPayloadClass()));
+        List<HagridListener<?>> listeners = listenerRegistry.get(listener.getTopic());
         if (listeners == null) return;
         listeners.remove(listener);
     }
 
     @Override
     public <T> void unregisterListener(String topic, Class<T> payloadClass) {
-        listenerRegistry.remove(getKeyFrom(topic, payloadClass));
+        List<HagridListener<?>> listeners = listenerRegistry.get(topic);
+        if (listeners == null) return;
+        listeners.removeIf(hagridListener -> hagridListener.getPayloadClass().equals(payloadClass));
     }
 
     @Override
     public void unregisterListener(String topic) {
-        listenerRegistry.entrySet().removeIf(stringListEntry -> stringListEntry.getKey().startsWith(topic + "/"));
+        listenerRegistry.entrySet().removeIf(stringListEntry -> stringListEntry.getKey().equals(topic));
     }
 
     @Override
     public List<HagridListener<?>> getListener(String topic, Class<?> payloadClass) {
-        return this.listenerRegistry.getOrDefault(getKeyFrom(topic, payloadClass), new ArrayList<>());
+        List<HagridListener<?>> listeners = listenerRegistry.getOrDefault(topic, new ArrayList<>());
+        if (listeners.isEmpty()) return new ArrayList<>();
+
+        return listeners.stream()
+            .filter(hagridListener -> hagridListener.getPayloadClass().equals(payloadClass))
+            .collect(Collectors.toList());
     }
 
     @Override
     public List<HagridListener<?>> getListener(String topic) {
-        return this.listenerRegistry.values()
-            .stream()
-            .flatMap((Function<List<HagridListener<?>>, Stream<HagridListener<?>>>) Collection::stream)
-            .filter(listener -> listener.getTopic().equalsIgnoreCase(topic))
-            .collect(Collectors.toList());
-    }
-
-    private String getKeyFrom(String topic, Class<?> payloadClass) {
-        return topic + "/" + payloadClass.getName();
+        return this.listenerRegistry.getOrDefault(topic, new ArrayList<>());
     }
 
 }
