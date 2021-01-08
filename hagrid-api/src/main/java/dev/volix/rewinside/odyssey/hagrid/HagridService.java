@@ -11,7 +11,7 @@ public interface HagridService extends HagridTopicRegistry, HagridListenerRegist
     void initialize();
 
     default HagridUpstreamWizard wizard() {
-        return new HagridUpstreamWizard(upstream(), downstream());
+        return new HagridUpstreamWizard(this);
     }
 
     UpstreamHandler upstream();
