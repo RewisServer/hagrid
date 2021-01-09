@@ -33,7 +33,10 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
         listeners.sort(Comparator.comparingInt(HagridListener::getPriority));
         for (HagridListener<?> listener : listeners) {
             if (listener.getDirection() != null && listener.getDirection() != direction) continue;
-            if (listener.getPayloadClass() == HagridPacket.class) {
+            if (!packet.getRequestId().equals(listener.getRequestId())) {
+                continue;
+            }
+            if (listener.getPayloadClass() == null) {
                 listener.execute(packet, context);
                 continue;
             }

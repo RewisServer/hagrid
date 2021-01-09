@@ -4,8 +4,10 @@ import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * @author Tobias Büser
@@ -59,18 +61,30 @@ public class HagridUpstreamWizard {
         return this;
     }
 
-    public <T> HagridUpstreamWizard waitsFor(Class<T> payloadClass, BiConsumer<T, HagridContext> packetConsumer) {
+    public <T> HagridUpstreamWizard waitsFor(Class<T> payloadClass, BiConsumer<Optional<T>, HagridContext> packetConsumer) {
         HagridListener<T> listener = new HagridListener<T>(this.topic, Direction.DOWNSTREAM, payloadClass, null) {
             @Override
             public BiConsumer<T, HagridContext> getPacketConsumer() {
                 return (t, context) -> {
-                    if(!context.getRequestId().equals(id)) return;
-
-                    packetConsumer.accept(t, context);
+                    packetConsumer.accept(Optional.ofNullable(t), context);
                     service.unregisterListener(this);
                 };
             }
-        };
+        }.listensTo(id);
+        this.service.registerListener(listener);
+        return this;
+    }
+
+    public <T> HagridUpstreamWizard waitsFor(Consumer<HagridContext> packetConsumer) {
+        HagridListener<T> listener = new HagridListener<T>(this.topic, Direction.DOWNSTREAM, null, null) {
+            @Override
+            public BiConsumer<T, HagridContext> getPacketConsumer() {
+                return (t, context) -> {
+                    packetConsumer.accept(context);
+                    service.unregisterListener(this);
+                };
+            }
+        }.listensTo(id);
         this.service.registerListener(listener);
         return this;
     }

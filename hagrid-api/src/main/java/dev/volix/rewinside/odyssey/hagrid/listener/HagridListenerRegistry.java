@@ -16,6 +16,12 @@ public interface HagridListenerRegistry {
 
     void registerListeners(Object containingInstance);
 
+    default void registerManyListeners(Object... containingInstances) {
+        for (Object containingInstance : containingInstances) {
+            this.registerListeners(containingInstance);
+        }
+    }
+
     <T> void unregisterListener(HagridListener<T> listener);
 
     <T> void unregisterListener(String topic, Class<T> payloadClass);

@@ -12,6 +12,8 @@ public class HagridListener<T> {
     private final Class<T> payloadClass;
     private final int priority;
 
+    private String requestId;
+
     private final BiConsumer<T, HagridContext> packetConsumer;
 
     public HagridListener(String topic, Direction direction, Class<T> payloadClass, BiConsumer<T, HagridContext> packetConsumer, int priority) {
@@ -38,6 +40,11 @@ public class HagridListener<T> {
         this(annotation.topic(), annotation.direction(), payloadClass, packetConsumer, annotation.priority());
     }
 
+    public HagridListener<T> listensTo(String requestId) {
+        this.requestId = requestId;
+        return this;
+    }
+
     public void execute(Object payload, HagridContext context) {
         BiConsumer<T, HagridContext> consumer = this.getPacketConsumer();
 
@@ -62,6 +69,10 @@ public class HagridListener<T> {
 
     public BiConsumer<T, HagridContext> getPacketConsumer() {
         return packetConsumer;
+    }
+
+    public String getRequestId() {
+        return requestId;
     }
 
 }
