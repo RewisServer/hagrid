@@ -27,4 +27,8 @@ public class Status {
         return message;
     }
 
+    @Override
+    public String toString() {
+        return this.code.name() + (this.message != null && !this.message.isEmpty() ? ": " + this.message : "");
+    }
 }
