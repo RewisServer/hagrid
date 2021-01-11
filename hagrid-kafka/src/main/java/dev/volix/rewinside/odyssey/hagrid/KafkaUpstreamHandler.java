@@ -2,7 +2,6 @@ package dev.volix.rewinside.odyssey.hagrid;
 
 import com.google.protobuf.ByteString;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
-import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Status;
 import java.util.Properties;
@@ -54,7 +53,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
         );
 
         // notify listeners
-        service.executeListeners(topic, Direction.UPSTREAM, new HagridContext(packet, topic), packet);
+        service.executeListeners(topic, Direction.UPSTREAM, new HagridContext<>(packet, topic), packet);
     }
 
 }

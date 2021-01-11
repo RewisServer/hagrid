@@ -1,7 +1,6 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
-import dev.volix.rewinside.odyssey.hagrid.listener.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
@@ -55,7 +54,7 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
     @Override
     public <T> void receive(String topic, HagridPacket<T> packet) {
         // notify listeners
-        service.executeListeners(topic, Direction.DOWNSTREAM, new HagridContext(packet, topic), packet);
+        service.executeListeners(topic, Direction.DOWNSTREAM, new HagridContext<>(packet, topic), packet);
     }
 
     private static class ConsumerTask extends StoppableTask {

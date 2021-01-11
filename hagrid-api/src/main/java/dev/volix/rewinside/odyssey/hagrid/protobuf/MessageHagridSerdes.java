@@ -1,8 +1,9 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.protobuf;
 
 import com.google.protobuf.Internal;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import dev.volix.rewinside.odyssey.hagrid.HagridSerdes;
 
 /**
  * @author Tobias Büser

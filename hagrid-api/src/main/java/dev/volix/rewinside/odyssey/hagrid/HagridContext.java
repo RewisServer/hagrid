@@ -1,13 +1,11 @@
-package dev.volix.rewinside.odyssey.hagrid.listener;
+package dev.volix.rewinside.odyssey.hagrid;
 
-import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
-import dev.volix.rewinside.odyssey.hagrid.Status;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 
 /**
  * @author Tobias Büser
  */
-public class HagridContext {
+public class HagridContext<T> {
 
     private final String id;
     private final String requestId;
@@ -15,10 +13,13 @@ public class HagridContext {
     private final Status status;
     private final long timestamp;
 
+    private final T payload;
+
     private Status responseStatus;
     private Object responsePayload;
 
-    public HagridContext(String id, String requestId, String topic, Status status, long timestamp) {
+    public HagridContext(T payload, String id, String requestId, String topic, Status status, long timestamp) {
+        this.payload = payload;
         this.id = id;
         this.requestId = requestId;
         this.topic = topic;
@@ -26,20 +27,20 @@ public class HagridContext {
         this.timestamp = timestamp;
     }
 
-    public HagridContext(HagridPacket<?> packet, String topic) {
-        this(packet.getId(), packet.getRequestId(), topic, packet.getStatus(), System.currentTimeMillis());
+    public HagridContext(HagridPacket<T> packet, String topic) {
+        this(packet.getPayload(), packet.getId(), packet.getRequestId(), topic, packet.getStatus(), System.currentTimeMillis());
     }
 
-    public HagridContext status(StatusCode code, String message) {
+    public HagridContext<T> status(StatusCode code, String message) {
         this.responseStatus = new Status(code, message);
         return this;
     }
 
-    public HagridContext status(StatusCode code) {
+    public HagridContext<T> status(StatusCode code) {
         return this.status(code, "");
     }
 
-    public <T> HagridContext payload(T payload) {
+    public <R> HagridContext<T> payload(R payload) {
         this.responsePayload = payload;
         return this;
     }
@@ -75,4 +76,9 @@ public class HagridContext {
     public long getTimestamp() {
         return timestamp;
     }
+
+    public T getPayload() {
+        return payload;
+    }
+
 }
