@@ -54,7 +54,7 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
     @Override
     public <T> void receive(String topic, HagridPacket<T> packet) {
         // notify listeners
-        service.executeListeners(topic, Direction.DOWNSTREAM, new HagridContext<>(packet, topic), packet);
+        service.executeListeners(topic, Direction.DOWNSTREAM, packet);
     }
 
     private static class ConsumerTask extends StoppableTask {
@@ -93,6 +93,7 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
                 Status status = new Status(packet.getStatus().getCode(), packet.getStatus().getMessage());
 
                 this.handler.receive(recordTopic, new HagridPacket<>(
+                    recordTopic,
                     packet.getId(),
                     packet.getRequestId(),
                     status,

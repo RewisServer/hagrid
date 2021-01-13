@@ -1,55 +1,44 @@
 package dev.volix.rewinside.odyssey.hagrid.listener;
 
-import dev.volix.rewinside.odyssey.hagrid.HagridContext;
-import java.util.function.BiConsumer;
+import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
+import dev.volix.rewinside.odyssey.hagrid.HagridResponse;
 
 /**
  * @author Tobias Büser
  */
-public class HagridListener<T> {
+public class HagridListener {
 
     private final String topic;
     private final Direction direction;
-    private final Class<T> payloadClass;
+    private final Class<?> payloadClass;
     private final int priority;
 
     private String requestId;
 
-    private final BiConsumer<T, HagridContext<T>> packetConsumer;
+    private final HagridListenerMethod consumer;
 
-    public HagridListener(String topic, Direction direction, Class<T> payloadClass, BiConsumer<T, HagridContext<T>> packetConsumer, int priority) {
+    private HagridListener(String topic, Direction direction, Class<?> payloadClass, int priority, String requestId, HagridListenerMethod packetConsumer) {
         this.topic = topic;
         this.direction = direction;
         this.payloadClass = payloadClass;
         this.priority = priority;
-        this.packetConsumer = packetConsumer;
+        this.requestId = requestId;
+        this.consumer = packetConsumer;
     }
 
-    public HagridListener(String topic, Direction direction, Class<T> payloadClass, BiConsumer<T, HagridContext<T>> packetConsumer) {
-        this(topic, direction, payloadClass, packetConsumer, Priority.MEDIUM);
+    public static Builder builder(HagridListenerMethod consumer) {
+        return new Builder(consumer);
     }
 
-    public HagridListener(String topic, Class<T> payloadClass, BiConsumer<T, HagridContext<T>> packetConsumer) {
-        this(topic, Direction.DOWNSTREAM, payloadClass, packetConsumer);
-    }
-
-    public HagridListener(String topic, Class<T> payloadClass, BiConsumer<T, HagridContext<T>> packetConsumer, int priority) {
-        this(topic, Direction.DOWNSTREAM, payloadClass, packetConsumer, priority);
-    }
-
-    public HagridListener(HagridListens annotation, Class<T> payloadClass, BiConsumer<T, HagridContext<T>> packetConsumer) {
-        this(annotation.topic(), annotation.direction(), payloadClass, packetConsumer, annotation.priority());
-    }
-
-    public HagridListener<T> listensTo(String requestId) {
+    public HagridListener listensTo(String requestId) {
         this.requestId = requestId;
         return this;
     }
 
-    public void execute(Object payload, HagridContext<T> context) {
-        BiConsumer<T, HagridContext<T>> consumer = this.getPacketConsumer();
+    public <T> void execute(T payload, HagridPacket<T> packet, HagridResponse response) {
+        HagridListenerMethod consumer = this.getConsumer();
 
-        if(consumer != null) consumer.accept((T) payload, context);
+        if(consumer != null) consumer.listen(payload, packet, response);
     }
 
     public String getTopic() {
@@ -60,7 +49,7 @@ public class HagridListener<T> {
         return direction;
     }
 
-    public Class<T> getPayloadClass() {
+    public Class<?> getPayloadClass() {
         return payloadClass;
     }
 
@@ -68,12 +57,59 @@ public class HagridListener<T> {
         return priority;
     }
 
-    public BiConsumer<T, HagridContext<T>> getPacketConsumer() {
-        return packetConsumer;
-    }
-
     public String getRequestId() {
         return requestId;
     }
+
+    public HagridListenerMethod getConsumer() {
+        return consumer;
+    }
+
+    public static class Builder {
+
+        private String topic = "";
+        private Direction direction = Direction.DOWNSTREAM;
+        private Class<?> payloadClass;
+        private int priority = Priority.MEDIUM;
+        private String listenId;
+        private final HagridListenerMethod consumer;
+
+        private Builder(HagridListenerMethod consumer) {
+            this.consumer = consumer;
+        }
+
+        public Builder topic(String topic) {
+            this.topic = topic;
+            return this;
+        }
+
+        public Builder direction(Direction direction) {
+            this.direction = direction;
+            return this;
+        }
+
+        public Builder payloadClass(Class<?> payloadClass) {
+            this.payloadClass = payloadClass;
+            return this;
+        }
+
+        public Builder priority(int priority) {
+            this.priority = priority;
+            return this;
+        }
+
+        public Builder listensTo(String id) {
+            this.listenId = id;
+            return this;
+        }
+
+        public HagridListener build() {
+            return new HagridListener(this.topic, this.direction, this.payloadClass, this.priority, this.listenId, this.consumer);
+        }
+
+
+
+    }
+
 
 }

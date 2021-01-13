@@ -1,6 +1,5 @@
 package dev.volix.rewinside.odyssey.hagrid.listener;
 
-import dev.volix.rewinside.odyssey.hagrid.HagridContext;
 import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
 import java.util.List;
 
@@ -9,11 +8,11 @@ import java.util.List;
  */
 public interface HagridListenerRegistry {
 
-    <T> void executeListeners(String topic, Direction direction, HagridContext context, HagridPacket<T> packet);
+    <T> void executeListeners(String topic, Direction direction, HagridPacket<T> packet);
 
-    <T> boolean hasListener(String topic, Class<T> payloadClass);
+    boolean hasListener(String topic, Class<?> payloadClass);
 
-    <T> void registerListener(HagridListener<T> listener);
+    void registerListener(HagridListener listener);
 
     void registerListeners(Object containingInstance);
 
@@ -23,14 +22,14 @@ public interface HagridListenerRegistry {
         }
     }
 
-    <T> void unregisterListener(HagridListener<T> listener);
+    void unregisterListener(HagridListener listener);
 
-    <T> void unregisterListener(String topic, Class<T> payloadClass);
+    void unregisterListener(String topic, Class<?> payloadClass);
 
     void unregisterListener(String topic);
 
-    List<HagridListener<?>> getListener(String topic, Class<?> payloadClass);
+    List<HagridListener> getListener(String topic, Class<?> payloadClass);
 
-    List<HagridListener<?>> getListener(String topic);
+    List<HagridListener> getListener(String topic);
 
 }

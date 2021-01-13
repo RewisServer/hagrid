@@ -5,6 +5,7 @@ package dev.volix.rewinside.odyssey.hagrid;
  */
 public class HagridPacket<T> {
 
+    private final String topic;
     private final String id;
     private final String requestId;
 
@@ -12,15 +13,20 @@ public class HagridPacket<T> {
 
     private final T payload;
 
-    public HagridPacket(String id, String requestId, Status status, T payload) {
+    public HagridPacket(String topic, String id, String requestId, Status status, T payload) {
+        this.topic = topic;
         this.id = id;
         this.requestId = requestId;
         this.status = status;
         this.payload = payload;
     }
 
-    public HagridPacket(String requestId, Status status, T payload) {
-        this(null, requestId, status, payload);
+    public HagridPacket(String topic, String requestId, Status status, T payload) {
+        this(topic, null, requestId, status, payload);
+    }
+
+    public String getTopic() {
+        return topic;
     }
 
     public String getId() {
