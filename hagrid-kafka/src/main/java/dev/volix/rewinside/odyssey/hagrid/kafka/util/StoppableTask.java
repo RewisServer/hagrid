@@ -1,4 +1,4 @@
-package dev.volix.rewinside.odyssey.hagrid.util;
+package dev.volix.rewinside.odyssey.hagrid.kafka.util;
 
 import java.time.Duration;
 

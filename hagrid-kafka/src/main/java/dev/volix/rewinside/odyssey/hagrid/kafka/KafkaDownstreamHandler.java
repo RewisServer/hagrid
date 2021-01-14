@@ -1,9 +1,14 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.kafka;
 
+import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
+import dev.volix.rewinside.odyssey.hagrid.HagridService;
+import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
+import dev.volix.rewinside.odyssey.hagrid.Status;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
-import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
+import dev.volix.rewinside.odyssey.hagrid.kafka.util.StoppableTask;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;

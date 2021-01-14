@@ -1,6 +1,12 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.kafka;
 
-import dev.volix.rewinside.odyssey.hagrid.util.Registry;
+import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.HagridSerdes;
+import dev.volix.rewinside.odyssey.hagrid.HagridService;
+import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
+import dev.volix.rewinside.odyssey.hagrid.StandardHagridListenerRegistry;
+import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.kafka.util.Registry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -15,7 +21,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 /**
  * @author Tobias Büser
  */
-public class KafkaHagridService extends UglyHagridListenerRegistry implements HagridService {
+public class KafkaHagridService extends StandardHagridListenerRegistry implements HagridService {
 
     private final Properties properties;
 

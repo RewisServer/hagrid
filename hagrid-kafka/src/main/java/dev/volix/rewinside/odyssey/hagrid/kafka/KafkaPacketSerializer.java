@@ -1,4 +1,4 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.kafka;
 
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import org.apache.kafka.common.serialization.Serializer;

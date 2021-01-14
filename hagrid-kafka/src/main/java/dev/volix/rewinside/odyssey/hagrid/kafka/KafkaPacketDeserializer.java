@@ -1,4 +1,4 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.kafka;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;

@@ -25,6 +25,10 @@ public class HagridPacket<T> {
         this(topic, null, requestId, status, payload);
     }
 
+    public boolean hasPayload() {
+        return this.payload != null;
+    }
+
     public String getTopic() {
         return topic;
     }
@@ -48,8 +52,10 @@ public class HagridPacket<T> {
     @Override
     public String toString() {
         return "HagridPacket{" +
-            "id='" + id + '\'' +
+            "topic='" + topic + '\'' +
+            ", id='" + id + '\'' +
             ", requestId='" + requestId + '\'' +
+            ", status=" + status +
             ", payload=" + payload +
             '}';
     }

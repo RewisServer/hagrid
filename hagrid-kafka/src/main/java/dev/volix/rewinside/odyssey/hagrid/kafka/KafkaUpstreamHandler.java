@@ -1,6 +1,10 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.kafka;
 
 import com.google.protobuf.ByteString;
+import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
+import dev.volix.rewinside.odyssey.hagrid.HagridService;
+import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
+import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Status;
@@ -31,7 +35,6 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
             throw new IllegalArgumentException("Given topic has to be registered first!");
         }
 
-        // TODO also we need a `defaultSerdes` which is protobuf for serializing an empty payload.
         T payload = packet.getPayload();
         Packet.Payload packetPayload = payload == null
             ? Packet.Payload.newBuilder().setValue(ByteString.copyFrom(new byte[] {})).build()

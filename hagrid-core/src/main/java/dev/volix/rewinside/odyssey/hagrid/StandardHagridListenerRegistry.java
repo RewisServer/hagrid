@@ -7,23 +7,32 @@ import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListens;
 import dev.volix.rewinside.odyssey.hagrid.listener.Priority;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
+import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
  * @author Tobias Büser
  */
-abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
+public abstract class StandardHagridListenerRegistry implements HagridListenerRegistry {
 
-    private final Map<String, List<HagridListener>> listenerRegistry = new HashMap<>();
+    private final Map<String, List<HagridListener>> listenerRegistry = new ConcurrentHashMap<>();
 
     protected abstract HagridService getService();
+
+    public StandardHagridListenerRegistry() {
+        ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1, new DaemonThreadFactory());
+        threadPool.scheduleAtFixedRate(new CleanupTask(listenerRegistry), 2, 2, TimeUnit.SECONDS);
+    }
 
     @Override
     public <T> void executeListeners(String topic, Direction direction, HagridPacket<T> packet) {
@@ -35,7 +44,7 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
             if (listener.getDirection() != null && listener.getDirection() != direction) {
                 continue;
             }
-            if (listener.getRequestId() != null && !packet.getId().equals(listener.getRequestId())) {
+            if (listener.getListenId() != null && !packet.getId().equals(listener.getListenId())) {
                 continue;
             }
 
@@ -57,7 +66,7 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
                     .send();
             }
 
-            if (listener.getRequestId() != null) {
+            if (listener.getListenId() != null) {
                 // a requestid is unique, this listener needs to be unregistered
                 this.unregisterListener(listener);
             }
@@ -78,6 +87,8 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
         List<HagridListener> listeners = listenerRegistry.getOrDefault(listener.getTopic(), new ArrayList<>());
         listeners.add(listener);
         listenerRegistry.put(listener.getTopic(), listeners);
+
+        listener.setRegisteredAt(System.currentTimeMillis());
     }
 
     @Override
@@ -90,8 +101,11 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
             if (annotation == null) continue;
 
             if (!declaredMethod.getReturnType().equals(void.class)) continue;
-            if (declaredMethod.getParameterCount() != 2) continue;
-            if (declaredMethod.getParameterTypes()[1] != HagridPacket.class) continue;
+            int parameterCount = declaredMethod.getParameterCount();
+
+            if (parameterCount < 1 || parameterCount > 3) continue;
+            if (parameterCount >= 2 && declaredMethod.getParameterTypes()[1] != HagridPacket.class) continue;
+            if (parameterCount >= 3 && declaredMethod.getParameterTypes()[2] != HagridResponse.class) continue;
             Class<?> parameter = declaredMethod.getParameterTypes()[0];
 
             // if the enclosing class already contains such an annotation
@@ -110,7 +124,13 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
                 @Override
                 public <T> void listen(T payload, HagridPacket<T> req, HagridResponse response) {
                     try {
-                        declaredMethod.invoke(containingInstance, payload, response);
+                        if (parameterCount == 1) {
+                            declaredMethod.invoke(containingInstance, payload);
+                        } else if (parameterCount == 2) {
+                            declaredMethod.invoke(containingInstance, payload, req);
+                        } else {
+                            declaredMethod.invoke(containingInstance, payload, req, response);
+                        }
                     } catch (IllegalAccessException | InvocationTargetException e) {
                         // ignore, dont execute then ..
                     }
@@ -151,6 +171,35 @@ abstract class UglyHagridListenerRegistry implements HagridListenerRegistry {
     @Override
     public List<HagridListener> getListener(String topic) {
         return this.listenerRegistry.getOrDefault(topic, new ArrayList<>());
+    }
+
+    private class CleanupTask implements Runnable {
+
+        private final Map<String, List<HagridListener>> listenerRegistry;
+
+        public CleanupTask(Map<String, List<HagridListener>> listenerRegistry) {
+            this.listenerRegistry = listenerRegistry;
+        }
+
+        @Override
+        public void run() {
+            long current = System.currentTimeMillis();
+
+            for (String topic : listenerRegistry.keySet()) {
+                List<HagridListener> listenersCopy = new ArrayList<>(listenerRegistry.get(topic));
+
+                for (HagridListener listener : listenersCopy) {
+                    if (listener.getTimeoutInSeconds() <= 0) continue;
+                    long timeoutAt = listener.getRegisteredAt() + (listener.getTimeoutInSeconds() * 1000);
+
+                    if (timeoutAt >= current) {
+                        unregisterListener(listener);
+                        listener.executeTimeout();
+                    }
+                }
+            }
+        }
+
     }
 
 }

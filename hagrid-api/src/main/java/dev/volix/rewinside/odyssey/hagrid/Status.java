@@ -15,8 +15,16 @@ public class Status {
         this.message = message;
     }
 
+    public boolean is(StatusCode code) {
+        return this.getCode() == code;
+    }
+
     public boolean isOk() {
-        return this.getCode() == StatusCode.OK;
+        return this.is(StatusCode.OK);
+    }
+
+    public boolean isTimeout() {
+        return this.is(StatusCode.TIMEOUT);
     }
 
     public StatusCode getCode() {

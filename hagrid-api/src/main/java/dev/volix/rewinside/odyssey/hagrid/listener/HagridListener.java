@@ -2,43 +2,54 @@ package dev.volix.rewinside.odyssey.hagrid.listener;
 
 import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
 import dev.volix.rewinside.odyssey.hagrid.HagridResponse;
+import dev.volix.rewinside.odyssey.hagrid.Status;
+import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 
 /**
  * @author Tobias Büser
  */
 public class HagridListener {
 
+    public static final int DEFAULT_TIMEOUT_IN_SECONDS = 10;
+
     private final String topic;
     private final Direction direction;
     private final Class<?> payloadClass;
     private final int priority;
 
-    private String requestId;
+    private long registeredAt;
+    private final int timeoutInSeconds;
+    private final String listenId;
 
     private final HagridListenerMethod consumer;
 
-    private HagridListener(String topic, Direction direction, Class<?> payloadClass, int priority, String requestId, HagridListenerMethod packetConsumer) {
+    private HagridListener(String topic, Direction direction, Class<?> payloadClass,
+                           int priority, String requestId, HagridListenerMethod packetConsumer,
+                           int timeoutInSeconds) {
         this.topic = topic;
         this.direction = direction;
         this.payloadClass = payloadClass;
         this.priority = priority;
-        this.requestId = requestId;
+        this.listenId = requestId;
         this.consumer = packetConsumer;
+        this.timeoutInSeconds = timeoutInSeconds;
     }
 
     public static Builder builder(HagridListenerMethod consumer) {
         return new Builder(consumer);
     }
 
-    public HagridListener listensTo(String requestId) {
-        this.requestId = requestId;
-        return this;
-    }
-
     public <T> void execute(T payload, HagridPacket<T> packet, HagridResponse response) {
         HagridListenerMethod consumer = this.getConsumer();
 
         if(consumer != null) consumer.listen(payload, packet, response);
+    }
+
+    public void executeTimeout() {
+        HagridListenerMethod consumer = this.getConsumer();
+
+        HagridPacket<?> packet = new HagridPacket<>(this.topic, this.listenId, new Status(StatusCode.TIMEOUT, ""), null);
+        if(consumer != null) consumer.listen(null, packet, new HagridResponse());
     }
 
     public String getTopic() {
@@ -57,8 +68,20 @@ public class HagridListener {
         return priority;
     }
 
-    public String getRequestId() {
-        return requestId;
+    public String getListenId() {
+        return listenId;
+    }
+
+    public long getRegisteredAt() {
+        return registeredAt;
+    }
+
+    public void setRegisteredAt(long registeredAt) {
+        this.registeredAt = registeredAt;
+    }
+
+    public int getTimeoutInSeconds() {
+        return timeoutInSeconds;
     }
 
     public HagridListenerMethod getConsumer() {
@@ -73,6 +96,7 @@ public class HagridListener {
         private int priority = Priority.MEDIUM;
         private String listenId;
         private final HagridListenerMethod consumer;
+        private int timeoutInSeconds = DEFAULT_TIMEOUT_IN_SECONDS;
 
         private Builder(HagridListenerMethod consumer) {
             this.consumer = consumer;
@@ -103,8 +127,14 @@ public class HagridListener {
             return this;
         }
 
+        public Builder timeout(int timeoutInSeconds) {
+            this.timeoutInSeconds = timeoutInSeconds;
+            return this;
+        }
+
         public HagridListener build() {
-            return new HagridListener(this.topic, this.direction, this.payloadClass, this.priority, this.listenId, this.consumer);
+            return new HagridListener(this.topic, this.direction, this.payloadClass,
+                this.priority, this.listenId, this.consumer, this.timeoutInSeconds);
         }
 
 

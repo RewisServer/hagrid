@@ -22,7 +22,7 @@ public class HagridUpstreamWizard {
     private Status status = new Status(StatusCode.OK, "");
     private Object payload;
 
-    private int timeoutInSeconds = -1;
+    private int timeoutInSeconds = HagridListener.DEFAULT_TIMEOUT_IN_SECONDS;
 
     public HagridUpstreamWizard(HagridService service) {
         this.service = service;
@@ -62,6 +62,11 @@ public class HagridUpstreamWizard {
         return this;
     }
 
+    public HagridUpstreamWizard timeout(int timeoutInSeconds) {
+        this.timeoutInSeconds = timeoutInSeconds;
+        return this;
+    }
+
     public <T> void send() {
         this.service.upstream().send(this.topic, this.key, new HagridPacket<>(this.topic, this.id, this.requestId, status, (T) this.payload));
     }
@@ -70,12 +75,18 @@ public class HagridUpstreamWizard {
         this.send();
 
         CompletableFuture<HagridPacket<T>> future = new CompletableFuture<>();
-        HagridListener listener = HagridListener.builder(new HagridListenerMethod() {
-            @Override
-            public <E> void listen(E payload, HagridPacket<E> req, HagridResponse response) {
-                future.complete((HagridPacket<T>)req);
-            }
-        }).topic(topic).direction(Direction.DOWNSTREAM).payloadClass(payloadClass).listensTo(id).build();
+        HagridListener listener = HagridListener.builder(
+            new HagridListenerMethod() {
+                @Override
+                public <E> void listen(E payload, HagridPacket<E> req, HagridResponse response) {
+                    future.complete((HagridPacket<T>) req);
+                }
+            }).topic(topic)
+            .direction(Direction.DOWNSTREAM)
+            .payloadClass(payloadClass)
+            .listensTo(this.id)
+            .timeout(this.timeoutInSeconds)
+            .build();
         this.service.registerListener(listener);
         return future;
     }

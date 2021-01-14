@@ -10,6 +10,7 @@
     <module>hagrid-api</module>
     <module>hagrid-kafka</module>
     <module>hagrid-kafka-spigot</module>
+      <module>hagrid-core</module>
   </modules>
 
   <build>

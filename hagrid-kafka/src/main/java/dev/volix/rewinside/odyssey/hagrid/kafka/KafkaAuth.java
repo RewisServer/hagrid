@@ -1,4 +1,4 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.kafka;
 
 import java.util.Properties;
 import org.apache.kafka.clients.CommonClientConfigs;
