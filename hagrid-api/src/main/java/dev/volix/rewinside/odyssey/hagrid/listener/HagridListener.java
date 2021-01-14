@@ -96,7 +96,7 @@ public class HagridListener {
         private int priority = Priority.MEDIUM;
         private String listenId;
         private final HagridListenerMethod consumer;
-        private int timeoutInSeconds = DEFAULT_TIMEOUT_IN_SECONDS;
+        private int timeoutInSeconds = 0;
 
         private Builder(HagridListenerMethod consumer) {
             this.consumer = consumer;
@@ -128,6 +128,7 @@ public class HagridListener {
         }
 
         public Builder timeout(int timeoutInSeconds) {
+            if(timeoutInSeconds <= 0) timeoutInSeconds = 1;
             this.timeoutInSeconds = timeoutInSeconds;
             return this;
         }

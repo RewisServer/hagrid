@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -184,6 +185,7 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
         @Override
         public void run() {
             long current = System.currentTimeMillis();
+            System.out.println("Run cleanup ..");
 
             for (String topic : listenerRegistry.keySet()) {
                 List<HagridListener> listenersCopy = new ArrayList<>(listenerRegistry.get(topic));
@@ -191,8 +193,11 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                 for (HagridListener listener : listenersCopy) {
                     if (listener.getTimeoutInSeconds() <= 0) continue;
                     long timeoutAt = listener.getRegisteredAt() + (listener.getTimeoutInSeconds() * 1000);
+                    System.out.println("> RegisteredAt: " + new Date(listener.getRegisteredAt()).toInstant().toString());
+                    System.out.println("> TimeoutAt: " + new Date(timeoutAt).toInstant().toString());
+                    System.out.println("> Current: " + new Date(current).toInstant().toString());
 
-                    if (timeoutAt >= current) {
+                    if (current >= timeoutAt) {
                         unregisterListener(listener);
                         listener.executeTimeout();
                     }
