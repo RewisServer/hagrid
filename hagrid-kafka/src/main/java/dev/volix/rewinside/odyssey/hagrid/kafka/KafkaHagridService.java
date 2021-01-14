@@ -1,11 +1,13 @@
 package dev.volix.rewinside.odyssey.hagrid.kafka;
 
+import dev.volix.rewinside.odyssey.hagrid.ConnectionHandler;
 import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.HagridSerdes;
 import dev.volix.rewinside.odyssey.hagrid.HagridService;
 import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.StandardHagridListenerRegistry;
 import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.exception.HagridConnectionException;
 import dev.volix.rewinside.odyssey.hagrid.kafka.util.Registry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -27,8 +29,9 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
 
     private final Registry<String, HagridTopic<?>> topicRegistry = new Registry<>();
 
-    private final KafkaUpstreamHandler upstreamHandler;
-    private final KafkaDownstreamHandler downstreamHandler;
+    private final KafkaConnectionHandler connectionHandler;
+    private KafkaUpstreamHandler upstreamHandler;
+    private KafkaDownstreamHandler downstreamHandler;
 
     public KafkaHagridService(String address, String groupId, KafkaAuth auth) {
         this.properties = new Properties();
@@ -38,6 +41,7 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
 
         auth.getProperties().forEach(properties::put);
 
+        properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaPacketSerializer.class);
 
@@ -45,17 +49,26 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaPacketDeserializer.class);
 
-        this.upstreamHandler = new KafkaUpstreamHandler(this, properties);
-        this.downstreamHandler = new KafkaDownstreamHandler(this, properties);
+        this.connectionHandler = new KafkaConnectionHandler();
     }
 
     @Override
-    public void initialize() {
+    public void connect() throws HagridConnectionException {
+        this.upstreamHandler = new KafkaUpstreamHandler(this, properties);
+        this.downstreamHandler = new KafkaDownstreamHandler(this, properties);
+
         try {
             this.checkConnection();
+            this.connectionHandler.handleSuccess();
         } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
+            this.connectionHandler.handleError(e);
+            throw new HagridConnectionException(e);
         }
+    }
+
+    @Override
+    public ConnectionHandler getConnectionHandler() {
+        return this.connectionHandler;
     }
 
     @Override

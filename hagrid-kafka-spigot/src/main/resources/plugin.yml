@@ -1,5 +1,0 @@
-name: HagridSpigot
-author: Benediktator
-version: ${project.version}
-main: dev.volix.rewinside.odyssey.hagrid.HagridSpigotPlugin
-depend: [GrapePlugin]

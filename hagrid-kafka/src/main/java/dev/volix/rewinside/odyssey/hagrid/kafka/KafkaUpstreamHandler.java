@@ -5,13 +5,17 @@ import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
 import dev.volix.rewinside.odyssey.hagrid.HagridService;
 import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.exception.HagridExecutionException;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Status;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 
 /**
  * @author Tobias Büser
@@ -29,7 +33,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
     }
 
     @Override
-    public <T> void send(String topic, String key, HagridPacket<T> packet) {
+    public <T> void send(String topic, String key, HagridPacket<T> packet) throws HagridExecutionException {
         HagridTopic<T> registeredTopic = this.service.getTopic(topic);
         if (registeredTopic == null) {
             throw new IllegalArgumentException("Given topic has to be registered first!");
@@ -43,7 +47,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
             .setValue(ByteString.copyFrom(registeredTopic.getSerdes().serialize(payload)))
             .build();
 
-        producer.send(new ProducerRecord<>(topic, key,
+        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(topic, key,
             Packet.newBuilder()
                 .setPayload(packetPayload)
                 .setId(packet.getId())
@@ -54,6 +58,13 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
                     .build())
                 .build())
         );
+        try {
+            future.get();
+            this.service.getConnectionHandler().handleSuccess();
+        } catch (InterruptedException | ExecutionException e) {
+            this.service.getConnectionHandler().handleError(e);
+            throw new HagridExecutionException(e);
+        }
 
         // notify listeners
         service.executeListeners(topic, Direction.UPSTREAM, packet);
