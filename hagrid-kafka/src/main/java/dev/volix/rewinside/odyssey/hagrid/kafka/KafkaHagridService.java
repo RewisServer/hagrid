@@ -33,25 +33,25 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
     private final KafkaUpstreamHandler upstreamHandler;
     private final KafkaDownstreamHandler downstreamHandler;
 
-    public KafkaHagridService(String address, String groupId, KafkaAuth auth) {
+    public KafkaHagridService(final String address, final String groupId, final KafkaAuth auth) {
         this.properties = new Properties();
-        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, address);
-        properties.put(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, 3000);
-        properties.put(CommonClientConfigs.DEFAULT_API_TIMEOUT_MS_CONFIG, 3000);
+        this.properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, address);
+        this.properties.put(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, 3000);
+        this.properties.put(CommonClientConfigs.DEFAULT_API_TIMEOUT_MS_CONFIG, 3000);
 
-        auth.getProperties().forEach(properties::put);
+        auth.getProperties().forEach(this.properties::put);
 
-        properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
-        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaPacketSerializer.class);
+        this.properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
+        this.properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        this.properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaPacketSerializer.class);
 
-        properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaPacketDeserializer.class);
+        this.properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        this.properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        this.properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaPacketDeserializer.class);
 
         this.connectionHandler = new KafkaConnectionHandler(this);
-        this.upstreamHandler = new KafkaUpstreamHandler(this, properties);
-        this.downstreamHandler = new KafkaDownstreamHandler(this, properties);
+        this.upstreamHandler = new KafkaUpstreamHandler(this, this.properties);
+        this.downstreamHandler = new KafkaDownstreamHandler(this, this.properties);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
         try {
             this.checkConnection();
             this.connectionHandler.handleSuccess();
-        } catch (ExecutionException | InterruptedException e) {
+        } catch (final ExecutionException | InterruptedException e) {
             this.connectionHandler.handleError(e);
             throw new HagridConnectionException(e);
         }
@@ -92,47 +92,47 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
     }
 
     @Override
-    public boolean hasTopic(String topic) {
+    public boolean hasTopic(final String topic) {
         return this.topicRegistry.has(topic);
     }
 
     @Override
-    public <T> boolean hasTopic(Class<T> payloadClass) {
+    public <T> boolean hasTopic(final Class<T> payloadClass) {
         return this.topicRegistry.has(topic -> topic.getSerdes().getType().equals(payloadClass));
     }
 
     @Override
-    public <T> HagridTopic<T> getTopic(String topic) {
+    public <T> HagridTopic<T> getTopic(final String topic) {
         return (HagridTopic<T>) this.topicRegistry.getOrNull(topic);
     }
 
     @Override
-    public <T> HagridTopic<T> getTopic(Class<T> payloadClass) {
+    public <T> HagridTopic<T> getTopic(final Class<T> payloadClass) {
         return (HagridTopic<T>) this.topicRegistry.getOrNull(topic -> topic.getSerdes().getType().equals(payloadClass));
     }
 
     @Override
-    public <T> void registerTopic(String topic, HagridSerdes<T> serdes) {
+    public <T> void registerTopic(final String topic, final HagridSerdes<T> serdes) {
         this.topicRegistry.register(topic, new HagridTopic<>(topic, serdes));
 
         this.downstreamHandler.notifyToAddConsumer(topic);
     }
 
     @Override
-    public void unregisterTopic(String topic) {
+    public void unregisterTopic(final String topic) {
         this.topicRegistry.unregister(topic);
 
         this.downstreamHandler.notifyToRemoveConsumer(topic);
     }
 
     @Override
-    public <T> void unregisterTopic(Class<T> payloadClass) {
+    public <T> void unregisterTopic(final Class<T> payloadClass) {
         this.topicRegistry.unregister(topic -> topic.getSerdes().getType().equals(payloadClass));
     }
 
     private void checkConnection() throws ExecutionException, InterruptedException {
-        try (AdminClient client = KafkaAdminClient.create(properties)) {
-            ListTopicsResult topics = client.listTopics();
+        try (final AdminClient client = KafkaAdminClient.create(this.properties)) {
+            final ListTopicsResult topics = client.listTopics();
             topics.names().get();
         }
     }

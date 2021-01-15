@@ -27,14 +27,14 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
 
     private Producer<String, Packet> producer;
 
-    public KafkaUpstreamHandler(HagridService service, Properties properties) {
+    public KafkaUpstreamHandler(final HagridService service, final Properties properties) {
         this.service = service;
         this.properties = properties;
     }
 
     @Override
     public void connect() {
-        this.producer = new KafkaProducer<>(properties);
+        this.producer = new KafkaProducer<>(this.properties);
     }
 
     @Override
@@ -44,25 +44,25 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
     }
 
     @Override
-    public <T> void send(String topic, String key, HagridPacket<T> packet) throws HagridExecutionException {
-        if(producer == null) {
+    public <T> void send(final String topic, final String key, final HagridPacket<T> packet) throws HagridExecutionException {
+        if (this.producer == null) {
             throw new IllegalStateException("connect() has to be called before sending packets!");
         }
 
-        HagridTopic<T> registeredTopic = this.service.getTopic(topic);
+        final HagridTopic<T> registeredTopic = this.service.getTopic(topic);
         if (registeredTopic == null) {
             throw new IllegalArgumentException("Given topic has to be registered first!");
         }
 
-        T payload = packet.getPayload();
-        Packet.Payload packetPayload = payload == null
+        final T payload = packet.getPayload();
+        final Packet.Payload packetPayload = payload == null
             ? Packet.Payload.newBuilder().setValue(ByteString.copyFrom(new byte[] {})).build()
             : Packet.Payload.newBuilder()
             .setTypeUrl(payload.getClass().getTypeName())
             .setValue(ByteString.copyFrom(registeredTopic.getSerdes().serialize(payload)))
             .build();
 
-        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(topic, key,
+        final Future<RecordMetadata> future = this.producer.send(new ProducerRecord<>(topic, key,
             Packet.newBuilder()
                 .setPayload(packetPayload)
                 .setId(packet.getId())
@@ -76,13 +76,13 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
         try {
             future.get();
             this.service.getConnectionHandler().handleSuccess();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             this.service.getConnectionHandler().handleError(e);
             throw new HagridExecutionException(e);
         }
 
         // notify listeners
-        service.executeListeners(topic, Direction.UPSTREAM, packet);
+        this.service.executeListeners(topic, Direction.UPSTREAM, packet);
     }
 
 }

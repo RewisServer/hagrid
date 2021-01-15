@@ -31,48 +31,48 @@ public class KafkaConnectionHandler implements ConnectionHandler {
     private final ExecutorService threadPool = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
     private ReconnectTask reconnectTask;
 
-    public KafkaConnectionHandler(HagridService service) {
+    public KafkaConnectionHandler(final HagridService service) {
         this.service = service;
     }
 
     @Override
-    public void handleError(Throwable error) {
+    public void handleError(final Throwable error) {
         if (error instanceof ExecutionException) {
-            Throwable cause = error.getCause();
+            final Throwable cause = error.getCause();
             if (!(cause instanceof TimeoutException)) return;
 
             // fatal error
             this.lastFailure = System.currentTimeMillis();
 
-            statusLock.lock();
+            this.statusLock.lock();
             try {
-                if (status == Status.INACTIVE) return;
+                if (this.status == Status.INACTIVE) return;
                 this.status = Status.INACTIVE;
             } finally {
-                statusLock.unlock();
+                this.statusLock.unlock();
             }
 
-            if (reconnectTask != null && reconnectTask.isRunning()) return;
+            if (this.reconnectTask != null && this.reconnectTask.isRunning()) return;
             this.reconnectTask = new ReconnectTask(Duration.of(10, ChronoUnit.SECONDS));
-            threadPool.execute(this.reconnectTask);
+            this.threadPool.execute(this.reconnectTask);
         }
     }
 
     @Override
     public void handleSuccess() {
-        if (retries > 0) this.retries = 0;
+        if (this.retries > 0) this.retries = 0;
 
-        statusLock.lock();
+        this.statusLock.lock();
         try {
-            if (status != Status.ACTIVE) this.status = Status.ACTIVE;
+            if (this.status != Status.ACTIVE) this.status = Status.ACTIVE;
         } finally {
-            statusLock.unlock();
+            this.statusLock.unlock();
         }
 
         this.lastSuccess = System.currentTimeMillis();
 
-        if (reconnectTask != null && reconnectTask.isRunning()) {
-            reconnectTask.stop();
+        if (this.reconnectTask != null && this.reconnectTask.isRunning()) {
+            this.reconnectTask.stop();
             this.reconnectTask = null;
         }
     }
@@ -83,12 +83,12 @@ public class KafkaConnectionHandler implements ConnectionHandler {
     }
 
     @Override
-    public void setStatus(Status status) {
-        statusLock.lock();
+    public void setStatus(final Status status) {
+        this.statusLock.lock();
         try {
             this.status = status;
         } finally {
-            statusLock.unlock();
+            this.statusLock.unlock();
         }
 
         this.retries = 0;
@@ -96,28 +96,28 @@ public class KafkaConnectionHandler implements ConnectionHandler {
 
     @Override
     public long getLastSuccess() {
-        return lastSuccess;
+        return this.lastSuccess;
     }
 
     @Override
     public long getLastFailure() {
-        return lastFailure;
+        return this.lastFailure;
     }
 
     private class ReconnectTask extends StoppableTask {
 
-        public ReconnectTask(Duration sleepMs) {
+        public ReconnectTask(final Duration sleepMs) {
             super(sleepMs);
         }
 
         @Override
         public int execute() {
-            if (status != Status.INACTIVE) return 0;
+            if (KafkaConnectionHandler.this.status != Status.INACTIVE) return 0;
 
             try {
-                retries++;
-                service.reconnect();
-            } catch (HagridConnectionException e) {
+                KafkaConnectionHandler.this.retries++;
+                KafkaConnectionHandler.this.service.reconnect();
+            } catch (final HagridConnectionException e) {
                 // still not able to connect ..
             }
             return 0;

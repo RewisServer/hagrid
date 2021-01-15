@@ -11,7 +11,7 @@ public abstract class StoppableTask implements Runnable {
 
     private Duration sleepMs = Duration.ZERO;
 
-    public StoppableTask(Duration sleepMs) {
+    public StoppableTask(final Duration sleepMs) {
         this.sleepMs = sleepMs;
     }
 
@@ -22,14 +22,14 @@ public abstract class StoppableTask implements Runnable {
 
     @Override
     public void run() {
-        while(!stopped) {
-            int returnCode = this.execute();
-            if(returnCode != 0) break;
+        while (!this.stopped) {
+            final int returnCode = this.execute();
+            if (returnCode != 0) break;
 
-            if(sleepMs.isZero()) continue;
+            if (this.sleepMs.isZero()) continue;
             try {
-                Thread.sleep(sleepMs.toMillis());
-            } catch (InterruptedException e) {
+                Thread.sleep(this.sleepMs.toMillis());
+            } catch (final InterruptedException e) {
                 // hopefully you execute it asynchronously though
                 Thread.currentThread().interrupt();
             }
@@ -41,7 +41,7 @@ public abstract class StoppableTask implements Runnable {
     }
 
     public boolean isRunning() {
-        return !stopped;
+        return !this.stopped;
     }
 
 }
