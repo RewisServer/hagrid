@@ -40,4 +40,8 @@ public abstract class StoppableTask implements Runnable {
         this.stopped = true;
     }
 
+    public boolean isRunning() {
+        return !stopped;
+    }
+
 }

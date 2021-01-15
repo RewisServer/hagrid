@@ -5,13 +5,15 @@ import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
 import dev.volix.rewinside.odyssey.hagrid.HagridService;
 import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.Status;
+import dev.volix.rewinside.odyssey.hagrid.kafka.util.StoppableTask;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
-import dev.volix.rewinside.odyssey.hagrid.kafka.util.StoppableTask;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -30,15 +32,38 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
     private final Properties properties;
 
     private final ExecutorService threadPool = Executors.newCachedThreadPool(new DaemonThreadFactory());
-    private final Map<String, StoppableTask> consumerTasks = new HashMap<>();
+
+    private final Map<String, ConsumerTask> topicsToConsumer = new HashMap<>();
 
     public KafkaDownstreamHandler(HagridService service, Properties properties) {
         this.service = service;
         this.properties = properties;
     }
 
+    @Override
+    public void connect() {
+        if (this.topicsToConsumer.isEmpty()) return;
+        List<String> topics = new ArrayList<>(this.topicsToConsumer.keySet());
+
+        this.topicsToConsumer.clear();
+        for (String topic : topics) {
+            this.notifyToAddConsumer(topic);
+        }
+    }
+
+    @Override
+    public void disconnect() {
+        for (ConsumerTask task : this.topicsToConsumer.values()) {
+            if (!task.isRunning()) continue;
+
+            Consumer<String, Packet> consumer = task.getConsumer();
+            if (consumer != null) consumer.close();
+            task.stop();
+        }
+    }
+
     void notifyToAddConsumer(String topic) {
-        if (consumerTasks.containsKey(topic)) return;
+        if (topicsToConsumer.containsKey(topic)) return;
 
         Consumer<String, Packet> consumer = new KafkaConsumer<>(properties);
         consumer.subscribe(Collections.singletonList(topic));
@@ -46,12 +71,15 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
         ConsumerTask task = new ConsumerTask(this.service, this, consumer);
         this.threadPool.execute(task);
 
-        consumerTasks.put(topic, task);
+        topicsToConsumer.put(topic, task);
     }
 
     void notifyToRemoveConsumer(String topic) {
-        StoppableTask task = consumerTasks.remove(topic);
+        ConsumerTask task = topicsToConsumer.remove(topic);
         if (task != null) {
+            Consumer<String, Packet> consumer = task.getConsumer();
+            if (consumer != null) consumer.close();
+
             task.stop();
         }
     }
@@ -107,6 +135,11 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
             }
             return 0;
         }
+
+        public Consumer<String, Packet> getConsumer() {
+            return consumer;
+        }
+
     }
 
 }

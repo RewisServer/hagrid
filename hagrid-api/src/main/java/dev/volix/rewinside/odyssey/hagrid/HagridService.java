@@ -7,9 +7,13 @@ import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 /**
  * @author Tobias Büser
  */
-public interface HagridService extends HagridTopicRegistry, HagridListenerRegistry, Service {
+public interface HagridService extends HagridTopicRegistry, HagridListenerRegistry, Service, Connectible {
 
-    void connect() throws HagridConnectionException;
+    @Override
+    default void reconnect() throws HagridConnectionException {
+        this.connect();
+        this.disconnect();
+    }
 
     ConnectionHandler getConnectionHandler();
 

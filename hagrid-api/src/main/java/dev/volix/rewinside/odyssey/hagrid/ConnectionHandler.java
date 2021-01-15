@@ -5,8 +5,6 @@ package dev.volix.rewinside.odyssey.hagrid;
  */
 public interface ConnectionHandler {
 
-    Status getStatus();
-
     default boolean isActive() {
         return this.getStatus() == Status.ACTIVE;
     }
@@ -14,6 +12,10 @@ public interface ConnectionHandler {
     void handleError(Throwable error);
 
     void handleSuccess();
+
+    Status getStatus();
+
+    void setStatus(Status status);
 
     long getLastSuccess();
 

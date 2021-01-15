@@ -23,17 +23,32 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 public class KafkaUpstreamHandler implements UpstreamHandler {
 
     private final HagridService service;
+    private final Properties properties;
 
-    private final Producer<String, Packet> producer;
+    private Producer<String, Packet> producer;
 
     public KafkaUpstreamHandler(HagridService service, Properties properties) {
         this.service = service;
+        this.properties = properties;
+    }
 
+    @Override
+    public void connect() {
         this.producer = new KafkaProducer<>(properties);
     }
 
     @Override
+    public void disconnect() {
+        this.producer.close();
+        this.producer = null;
+    }
+
+    @Override
     public <T> void send(String topic, String key, HagridPacket<T> packet) throws HagridExecutionException {
+        if(producer == null) {
+            throw new IllegalStateException("connect() has to be called before sending packets!");
+        }
+
         HagridTopic<T> registeredTopic = this.service.getTopic(topic);
         if (registeredTopic == null) {
             throw new IllegalArgumentException("Given topic has to be registered first!");

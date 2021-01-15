@@ -30,8 +30,8 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
     private final Registry<String, HagridTopic<?>> topicRegistry = new Registry<>();
 
     private final KafkaConnectionHandler connectionHandler;
-    private KafkaUpstreamHandler upstreamHandler;
-    private KafkaDownstreamHandler downstreamHandler;
+    private final KafkaUpstreamHandler upstreamHandler;
+    private final KafkaDownstreamHandler downstreamHandler;
 
     public KafkaHagridService(String address, String groupId, KafkaAuth auth) {
         this.properties = new Properties();
@@ -49,13 +49,15 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaPacketDeserializer.class);
 
-        this.connectionHandler = new KafkaConnectionHandler();
+        this.connectionHandler = new KafkaConnectionHandler(this);
+        this.upstreamHandler = new KafkaUpstreamHandler(this, properties);
+        this.downstreamHandler = new KafkaDownstreamHandler(this, properties);
     }
 
     @Override
     public void connect() throws HagridConnectionException {
-        this.upstreamHandler = new KafkaUpstreamHandler(this, properties);
-        this.downstreamHandler = new KafkaDownstreamHandler(this, properties);
+        this.upstreamHandler.connect();
+        this.downstreamHandler.connect();
 
         try {
             this.checkConnection();
@@ -64,6 +66,14 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
             this.connectionHandler.handleError(e);
             throw new HagridConnectionException(e);
         }
+    }
+
+    @Override
+    public void disconnect() {
+        this.upstreamHandler.disconnect();
+        this.downstreamHandler.disconnect();
+
+        this.connectionHandler.setStatus(ConnectionHandler.Status.INACTIVE);
     }
 
     @Override
