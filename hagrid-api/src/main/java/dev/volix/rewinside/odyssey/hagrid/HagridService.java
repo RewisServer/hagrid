@@ -11,8 +11,8 @@ public interface HagridService extends HagridTopicRegistry, HagridListenerRegist
 
     @Override
     default void reconnect() throws HagridConnectionException {
-        this.connect();
         this.disconnect();
+        this.connect();
     }
 
     ConnectionHandler getConnectionHandler();
