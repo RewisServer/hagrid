@@ -69,7 +69,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
                 .setRequestId(packet.getRequestId())
                 .setStatus(Status.newBuilder()
                     .setCode(packet.getStatus().getCode())
-                    .setMessage(packet.getStatus().getMessage())
+                    .setMessage(packet.getStatus().getMessage() == null ? "" : packet.getStatus().getMessage())
                     .build())
                 .build())
         );
