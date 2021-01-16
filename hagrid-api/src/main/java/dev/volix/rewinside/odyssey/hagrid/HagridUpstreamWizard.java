@@ -25,77 +25,77 @@ public class HagridUpstreamWizard {
 
     private int timeoutInSeconds = HagridListener.DEFAULT_TIMEOUT_IN_SECONDS;
 
-    public HagridUpstreamWizard(HagridService service) {
+    public HagridUpstreamWizard(final HagridService service) {
         this.service = service;
     }
 
-    public HagridUpstreamWizard topic(String topic) {
+    public HagridUpstreamWizard topic(final String topic) {
         this.topic = topic;
         return this;
     }
 
-    public HagridUpstreamWizard key(String key) {
+    public HagridUpstreamWizard key(final String key) {
         this.key = key;
         return this;
     }
 
-    public HagridUpstreamWizard respondsTo(String requestId) {
+    public HagridUpstreamWizard respondsTo(final String requestId) {
         this.requestId = requestId;
         return this;
     }
 
-    public <T> HagridUpstreamWizard respondsTo(HagridPacket<T> packet) {
+    public <T> HagridUpstreamWizard respondsTo(final HagridPacket<T> packet) {
         this.topic(packet.getTopic());
-        return respondsTo(packet.getId());
+        return this.respondsTo(packet.getId());
     }
 
-    public HagridUpstreamWizard status(StatusCode code, String message) {
+    public HagridUpstreamWizard status(final StatusCode code, final String message) {
         this.status = new Status(code, message);
         return this;
     }
 
-    public HagridUpstreamWizard status(StatusCode code) {
+    public HagridUpstreamWizard status(final StatusCode code) {
         return this.status(code, "");
     }
 
-    public <T> HagridUpstreamWizard payload(T payload) {
+    public <T> HagridUpstreamWizard payload(final T payload) {
         this.payload = payload;
         return this;
     }
 
-    public HagridUpstreamWizard timeout(int timeoutInSeconds) {
+    public HagridUpstreamWizard timeout(final int timeoutInSeconds) {
         this.timeoutInSeconds = timeoutInSeconds;
         return this;
     }
 
     public <T> void send() {
-        HagridPacket<T> packet = new HagridPacket<>(this.topic, this.id, this.requestId, status, (T) this.payload);
+        final HagridPacket<T> packet = new HagridPacket<>(this.topic, this.id, this.requestId, this.status, (T) this.payload);
 
         try {
             this.service.upstream().send(this.topic, this.key, packet);
-        } catch (HagridExecutionException e) {
+        } catch (final HagridExecutionException e) {
             // ignore, because at this point we can't possibly
             // do anything.
         }
     }
 
-    public <T> CompletableFuture<HagridPacket<T>> sendAndWait(Class<T> payloadClass) {
-        this.send();
-
-        CompletableFuture<HagridPacket<T>> future = new CompletableFuture<>();
-        HagridListener listener = HagridListener.builder(
+    public <T> CompletableFuture<HagridPacket<T>> sendAndWait(final Class<T> payloadClass) {
+        final CompletableFuture<HagridPacket<T>> future = new CompletableFuture<>();
+        final HagridListener listener = HagridListener.builder(
             new HagridListenerMethod() {
                 @Override
-                public <E> void listen(E payload, HagridPacket<E> req, HagridResponse response) {
+                public <E> void listen(final E payload, final HagridPacket<E> req, final HagridResponse response) {
                     future.complete((HagridPacket<T>) req);
                 }
-            }).topic(topic)
+            }).topic(this.topic)
             .direction(Direction.DOWNSTREAM)
             .payloadClass(payloadClass)
             .listensTo(this.id)
             .timeout(this.timeoutInSeconds)
             .build();
         this.service.registerListener(listener);
+
+        this.send();
         return future;
     }
 
@@ -103,11 +103,11 @@ public class HagridUpstreamWizard {
         return this.sendAndWait((Class<T>) null);
     }
 
-    public <T> void sendAndWait(Class<T> payloadClass, Consumer<HagridPacket<T>> consumer) {
+    public <T> void sendAndWait(final Class<T> payloadClass, final Consumer<HagridPacket<T>> consumer) {
         this.sendAndWait(payloadClass).thenAccept(consumer);
     }
 
-    public void sendAndWait(Consumer<HagridPacket<?>> consumer) {
+    public void sendAndWait(final Consumer<HagridPacket<?>> consumer) {
         this.sendAndWait().thenAccept(consumer);
     }
 

@@ -125,6 +125,7 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
                     );
                 final Status status = new Status(packet.getStatus().getCode(), packet.getStatus().getMessage());
 
+                // if this throws an error, the record does not get successfuly consumed
                 this.handler.receive(recordTopic, new HagridPacket<>(
                     recordTopic,
                     packet.getId(),
