@@ -36,6 +36,18 @@ public class KafkaConnectionHandler implements ConnectionHandler {
     }
 
     @Override
+    public boolean isActive() {
+        this.statusLock.lock();
+        boolean isActive;
+        try {
+            isActive = this.getStatus() == Status.ACTIVE;
+        } finally {
+            this.statusLock.unlock();
+        }
+        return isActive;
+    }
+
+    @Override
     public void handleError(final Throwable error) {
         if (error instanceof ExecutionException) {
             final Throwable cause = error.getCause();
