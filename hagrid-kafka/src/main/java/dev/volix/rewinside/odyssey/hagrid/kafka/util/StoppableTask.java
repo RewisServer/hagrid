@@ -34,10 +34,16 @@ public abstract class StoppableTask implements Runnable {
                 Thread.currentThread().interrupt();
             }
         }
+        this.onStop();
     }
 
     public void stop() {
         this.stopped = true;
+    }
+
+    public void onStop() {
+        // defaults to do nothing, but you can listen to it to do
+        // some cleanup.
     }
 
     public boolean isRunning() {

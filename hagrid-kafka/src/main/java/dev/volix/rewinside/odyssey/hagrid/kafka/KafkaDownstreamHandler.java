@@ -55,9 +55,6 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
     public void disconnect() {
         for (final ConsumerTask task : this.topicsToConsumer.values()) {
             if (!task.isRunning()) continue;
-
-            final Consumer<String, Packet> consumer = task.getConsumer();
-            if (consumer != null) consumer.close();
             task.stop();
         }
     }
@@ -77,9 +74,6 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
     void notifyToRemoveConsumer(final String topic) {
         final ConsumerTask task = this.topicsToConsumer.remove(topic);
         if (task != null) {
-            final Consumer<String, Packet> consumer = task.getConsumer();
-            if (consumer != null) consumer.close();
-
             task.stop();
         }
     }
@@ -135,6 +129,11 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
                 );
             }
             return 0;
+        }
+
+        @Override
+        public void onStop() {
+            this.consumer.close();
         }
 
         public Consumer<String, Packet> getConsumer() {
