@@ -170,7 +170,7 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                         || hagridListener.getListenId() != null;
                 }
                 return hagridListener.getPayloadClass() == null
-                    || hagridListener.getPayloadClass().equals(payloadClass);
+                    || hagridListener.getPayloadClass().isAssignableFrom(payloadClass);
             })
             .collect(Collectors.toList());
     }
