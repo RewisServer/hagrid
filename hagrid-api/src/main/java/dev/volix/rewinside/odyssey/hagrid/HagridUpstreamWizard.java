@@ -68,8 +68,8 @@ public class HagridUpstreamWizard {
         return this;
     }
 
-    public <T> void send() {
-        final HagridPacket<T> packet = new HagridPacket<>(this.topic, this.id, this.requestId, this.status, (T) this.payload);
+    public void send() {
+        final HagridPacket<?> packet = new HagridPacket<>(this.topic, this.id, this.requestId, this.status, this.payload);
 
         try {
             this.service.upstream().send(this.topic, this.key, packet);
