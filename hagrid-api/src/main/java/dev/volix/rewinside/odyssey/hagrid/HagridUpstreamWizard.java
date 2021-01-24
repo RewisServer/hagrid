@@ -1,6 +1,5 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
-import dev.volix.rewinside.odyssey.hagrid.exception.HagridExecutionException;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerMethod;
@@ -71,12 +70,7 @@ public class HagridUpstreamWizard {
     public void send() {
         final HagridPacket<?> packet = new HagridPacket<>(this.topic, this.id, this.requestId, this.status, this.payload);
 
-        try {
-            this.service.upstream().send(this.topic, this.key, packet);
-        } catch (final HagridExecutionException e) {
-            // ignore, because at this point we can't possibly
-            // do anything.
-        }
+        this.service.upstream().send(this.topic, this.key, packet);
     }
 
     public <T> CompletableFuture<HagridPacket<T>> sendAndWait(final Class<T> payloadClass) {
