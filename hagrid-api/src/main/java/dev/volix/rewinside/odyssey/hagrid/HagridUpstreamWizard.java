@@ -19,7 +19,7 @@ public class HagridUpstreamWizard {
     private String topic;
     private String key = "";
     private String requestId = "";
-    private Status status = new Status(StatusCode.OK, "");
+    private Status status = new Status(StatusCode.OK);
     private Object payload;
 
     private int timeoutInSeconds = HagridListener.DEFAULT_TIMEOUT_IN_SECONDS;

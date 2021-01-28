@@ -23,9 +23,9 @@ public class HagridListener {
 
     private final HagridListenerMethod consumer;
 
-    private HagridListener(String topic, Direction direction, Class<?> payloadClass,
-                           int priority, String requestId, HagridListenerMethod packetConsumer,
-                           int timeoutInSeconds) {
+    private HagridListener(final String topic, final Direction direction, final Class<?> payloadClass,
+                           final int priority, final String requestId, final HagridListenerMethod packetConsumer,
+                           final int timeoutInSeconds) {
         this.topic = topic;
         this.direction = direction;
         this.payloadClass = payloadClass;
@@ -35,57 +35,57 @@ public class HagridListener {
         this.timeoutInSeconds = timeoutInSeconds;
     }
 
-    public static Builder builder(HagridListenerMethod consumer) {
+    public static Builder builder(final HagridListenerMethod consumer) {
         return new Builder(consumer);
     }
 
-    public <T> void execute(T payload, HagridPacket<T> packet, HagridResponse response) {
-        HagridListenerMethod consumer = this.getConsumer();
+    public <T> void execute(final T payload, final HagridPacket<T> packet, final HagridResponse response) {
+        final HagridListenerMethod consumer = this.getConsumer();
 
-        if(consumer != null) consumer.listen(payload, packet, response);
+        if (consumer != null) consumer.listen(payload, packet, response);
     }
 
     public void executeTimeout() {
-        HagridListenerMethod consumer = this.getConsumer();
+        final HagridListenerMethod consumer = this.getConsumer();
 
-        HagridPacket<?> packet = new HagridPacket<>(this.topic, this.listenId, new Status(StatusCode.TIMEOUT, ""), null);
-        if(consumer != null) consumer.listen(null, packet, new HagridResponse());
+        final HagridPacket<?> packet = new HagridPacket<>(this.topic, this.listenId, new Status(StatusCode.TIMEOUT), null);
+        if (consumer != null) consumer.listen(null, packet, new HagridResponse());
     }
 
     public String getTopic() {
-        return topic;
+        return this.topic;
     }
 
     public Direction getDirection() {
-        return direction;
+        return this.direction;
     }
 
     public Class<?> getPayloadClass() {
-        return payloadClass;
+        return this.payloadClass;
     }
 
     public int getPriority() {
-        return priority;
+        return this.priority;
     }
 
     public String getListenId() {
-        return listenId;
+        return this.listenId;
     }
 
     public long getRegisteredAt() {
-        return registeredAt;
+        return this.registeredAt;
     }
 
-    public void setRegisteredAt(long registeredAt) {
+    public void setRegisteredAt(final long registeredAt) {
         this.registeredAt = registeredAt;
     }
 
     public int getTimeoutInSeconds() {
-        return timeoutInSeconds;
+        return this.timeoutInSeconds;
     }
 
     public HagridListenerMethod getConsumer() {
-        return consumer;
+        return this.consumer;
     }
 
     public static class Builder {
@@ -98,37 +98,37 @@ public class HagridListener {
         private final HagridListenerMethod consumer;
         private int timeoutInSeconds = 0;
 
-        private Builder(HagridListenerMethod consumer) {
+        private Builder(final HagridListenerMethod consumer) {
             this.consumer = consumer;
         }
 
-        public Builder topic(String topic) {
+        public Builder topic(final String topic) {
             this.topic = topic;
             return this;
         }
 
-        public Builder direction(Direction direction) {
+        public Builder direction(final Direction direction) {
             this.direction = direction;
             return this;
         }
 
-        public Builder payloadClass(Class<?> payloadClass) {
+        public Builder payloadClass(final Class<?> payloadClass) {
             this.payloadClass = payloadClass;
             return this;
         }
 
-        public Builder priority(int priority) {
+        public Builder priority(final int priority) {
             this.priority = priority;
             return this;
         }
 
-        public Builder listensTo(String id) {
+        public Builder listensTo(final String id) {
             this.listenId = id;
             return this;
         }
 
         public Builder timeout(int timeoutInSeconds) {
-            if(timeoutInSeconds <= 0) timeoutInSeconds = 1;
+            if (timeoutInSeconds <= 0) timeoutInSeconds = 1;
             this.timeoutInSeconds = timeoutInSeconds;
             return this;
         }
@@ -137,7 +137,6 @@ public class HagridListener {
             return new HagridListener(this.topic, this.direction, this.payloadClass,
                 this.priority, this.listenId, this.consumer, this.timeoutInSeconds);
         }
-
 
 
     }
