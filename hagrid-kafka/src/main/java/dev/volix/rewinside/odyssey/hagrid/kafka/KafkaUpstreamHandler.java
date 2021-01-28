@@ -54,7 +54,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
             throw new IllegalArgumentException("Given topic has to be registered first!");
         }
 
-        final T payload = packet.getPayload();
+        final T payload = packet.getPayloadOrNull();
         final Packet.Payload packetPayload = payload == null
             ? Packet.Payload.newBuilder().setValue(ByteString.copyFrom(new byte[] {})).build()
             : Packet.Payload.newBuilder()

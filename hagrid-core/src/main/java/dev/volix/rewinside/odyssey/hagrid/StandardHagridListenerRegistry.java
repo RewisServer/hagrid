@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,7 +37,9 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
 
     @Override
     public <T> void executeListeners(final String topic, final Direction direction, final HagridPacket<T> packet) {
-        final Class<?> payloadClass = packet.getPayload() == null ? null : packet.getPayload().getClass();
+        final Optional<T> payloadOptional = packet.getPayload();
+
+        final Class<?> payloadClass = payloadOptional.<Class<?>>map(T::getClass).orElse(null);
         final List<HagridListener> listeners = new ArrayList<>(this.getListener(topic, payloadClass));
 
         listeners.sort(Comparator.comparingInt(HagridListener::getPriority));
@@ -53,7 +56,7 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                 listener.execute(null, packet, response);
                 continue;
             }
-            listener.execute(packet.getPayload(), packet, response);
+            listener.execute(payloadOptional.orElse(null), packet, response);
 
             if (response.getPayload() != null || response.getStatus() != null) {
                 Status responseStatus = response.getStatus();
