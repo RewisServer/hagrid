@@ -66,8 +66,10 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
             if (executionError != null && listener.isResponsive()) {
                 // some error during execution, but the listener
                 // asks for a response nonetheless
+                final Throwable cause = executionError.getCause();
+
                 this.getService().wizard().respondsTo(packet)
-                    .status(StatusCode.INTERNAL, executionError.getMessage())
+                    .status(StatusCode.INTERNAL, cause == null ? executionError.getMessage() : cause.getMessage())
                     .send();
             } else if (response.getPayload() != null || response.getStatus() != null) {
                 // everything worked fine and he filled the response object
