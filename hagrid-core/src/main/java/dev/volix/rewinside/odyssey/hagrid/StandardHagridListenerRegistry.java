@@ -1,14 +1,15 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
+import dev.volix.rewinside.odyssey.hagrid.exception.HagridListenerExecutionException;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerMethod;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListens;
+import dev.volix.rewinside.odyssey.hagrid.listener.HagridResponds;
 import dev.volix.rewinside.odyssey.hagrid.listener.Priority;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,13 +53,24 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
             }
 
             final HagridResponse response = new HagridResponse();
-            if (listener.getPayloadClass() == null) {
-                listener.execute(null, packet, response);
-                continue;
-            }
-            listener.execute(payloadOptional.orElse(null), packet, response);
+            final T payload = listener.getPayloadClass() == null ? null : payloadOptional.orElse(null);
 
-            if (response.getPayload() != null || response.getStatus() != null) {
+            Throwable executionError = null;
+
+            try {
+                listener.execute(payload, packet, response);
+            } catch (final HagridListenerExecutionException ex) {
+                executionError = ex;
+            }
+
+            if (executionError != null && listener.isResponsive()) {
+                // some error during execution, but the listener
+                // asks for a response nonetheless
+                this.getService().wizard().respondsTo(packet)
+                    .status(StatusCode.INTERNAL, executionError.getMessage())
+                    .send();
+            } else if (response.getPayload() != null || response.getStatus() != null) {
+                // everything worked fine and he filled the response object
                 Status responseStatus = response.getStatus();
                 if (responseStatus == null) responseStatus = new Status(StatusCode.OK, "");
                 final Object responsePayload = response.getPayload();
@@ -97,7 +109,8 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
     @Override
     public void registerListeners(final Object containingInstance) {
         final Class<?> clazz = containingInstance.getClass();
-        final HagridListens clazzAnnotation = clazz.getAnnotation(HagridListens.class);
+        final HagridListens listensClassAnnotation = clazz.getAnnotation(HagridListens.class);
+        final HagridResponds respondsClassAnnotation = clazz.getAnnotation(HagridResponds.class);
 
         for (final Method declaredMethod : clazz.getDeclaredMethods()) {
             final HagridListens annotation = declaredMethod.getAnnotation(HagridListens.class);
@@ -113,15 +126,18 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
 
             // if the enclosing class already contains such an annotation
             // we can override specific values if necessary
-            final String topic = clazzAnnotation != null ?
-                clazzAnnotation.topic().isEmpty() ? annotation.topic() : clazzAnnotation.topic()
+            final String topic = listensClassAnnotation != null ?
+                listensClassAnnotation.topic().isEmpty() ? annotation.topic() : listensClassAnnotation.topic()
                 : annotation.topic();
-            final Direction direction = clazzAnnotation != null ?
-                clazzAnnotation.direction() == Direction.DOWNSTREAM ? annotation.direction() : clazzAnnotation.direction()
+            final Direction direction = listensClassAnnotation != null ?
+                listensClassAnnotation.direction() == Direction.DOWNSTREAM ? annotation.direction() : listensClassAnnotation.direction()
                 : annotation.direction();
-            final int priority = clazzAnnotation != null ?
-                clazzAnnotation.priority() == Priority.MEDIUM ? annotation.priority() : clazzAnnotation.priority()
+            final int priority = listensClassAnnotation != null ?
+                listensClassAnnotation.priority() == Priority.MEDIUM ? annotation.priority() : listensClassAnnotation.priority()
                 : annotation.priority();
+
+            final boolean isResponsive = respondsClassAnnotation != null
+                || declaredMethod.getAnnotation(HagridResponds.class) != null;
 
             this.registerListener(HagridListener.builder(new HagridListenerMethod() {
                 @Override
@@ -134,11 +150,12 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                         } else {
                             declaredMethod.invoke(containingInstance, payload, req, response);
                         }
-                    } catch (final IllegalAccessException | InvocationTargetException e) {
-                        // ignore, dont execute then ..
+                    } catch (final Exception e) {
+                        throw new HagridListenerExecutionException(topic, parameter, e);
                     }
                 }
-            }).topic(topic).direction(direction).payloadClass(parameter).priority(priority).build());
+            }).topic(topic).direction(direction).payloadClass(parameter)
+                .priority(priority).responsive(isResponsive).build());
         }
     }
 

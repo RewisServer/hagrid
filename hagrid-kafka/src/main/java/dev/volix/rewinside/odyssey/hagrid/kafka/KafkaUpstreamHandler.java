@@ -5,7 +5,7 @@ import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
 import dev.volix.rewinside.odyssey.hagrid.HagridService;
 import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
-import dev.volix.rewinside.odyssey.hagrid.exception.HagridExecutionException;
+import dev.volix.rewinside.odyssey.hagrid.exception.HagridStreamException;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Status;
@@ -44,7 +44,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
     }
 
     @Override
-    public <T> void send(final String topic, final String key, final HagridPacket<T> packet) throws HagridExecutionException {
+    public <T> void send(final String topic, final String key, final HagridPacket<T> packet) throws HagridStreamException {
         if (this.producer == null) {
             throw new IllegalStateException("connect() has to be called before sending packets!");
         }
@@ -78,7 +78,7 @@ public class KafkaUpstreamHandler implements UpstreamHandler {
             this.service.getConnectionHandler().handleSuccess();
         } catch (final InterruptedException | ExecutionException e) {
             this.service.getConnectionHandler().handleError(e);
-            throw new HagridExecutionException(e);
+            throw new HagridStreamException(e);
         }
 
         // notify listeners

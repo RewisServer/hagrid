@@ -3,9 +3,9 @@ package dev.volix.rewinside.odyssey.hagrid.exception;
 /**
  * @author Tobias Büser
  */
-public class HagridExecutionException extends RuntimeException {
+public class HagridStreamException extends RuntimeException {
 
-    public HagridExecutionException(final Throwable cause) {
+    public HagridStreamException(final Throwable cause) {
         super("Error during down- or upstream.", cause);
     }
 

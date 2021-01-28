@@ -21,11 +21,13 @@ public class HagridListener {
     private final int timeoutInSeconds;
     private final String listenId;
 
+    private final boolean responsive;
+
     private final HagridListenerMethod consumer;
 
     private HagridListener(final String topic, final Direction direction, final Class<?> payloadClass,
                            final int priority, final String requestId, final HagridListenerMethod packetConsumer,
-                           final int timeoutInSeconds) {
+                           final int timeoutInSeconds, final boolean responsive) {
         this.topic = topic;
         this.direction = direction;
         this.payloadClass = payloadClass;
@@ -33,6 +35,7 @@ public class HagridListener {
         this.listenId = requestId;
         this.consumer = packetConsumer;
         this.timeoutInSeconds = timeoutInSeconds;
+        this.responsive = responsive;
     }
 
     public static Builder builder(final HagridListenerMethod consumer) {
@@ -84,6 +87,10 @@ public class HagridListener {
         return this.timeoutInSeconds;
     }
 
+    public boolean isResponsive() {
+        return this.responsive;
+    }
+
     public HagridListenerMethod getConsumer() {
         return this.consumer;
     }
@@ -97,6 +104,7 @@ public class HagridListener {
         private String listenId;
         private final HagridListenerMethod consumer;
         private int timeoutInSeconds = 0;
+        private boolean responds = false;
 
         private Builder(final HagridListenerMethod consumer) {
             this.consumer = consumer;
@@ -133,9 +141,14 @@ public class HagridListener {
             return this;
         }
 
+        public Builder responsive(final boolean flag) {
+            this.responds = flag;
+            return this;
+        }
+
         public HagridListener build() {
             return new HagridListener(this.topic, this.direction, this.payloadClass,
-                this.priority, this.listenId, this.consumer, this.timeoutInSeconds);
+                this.priority, this.listenId, this.consumer, this.timeoutInSeconds, this.responds);
         }
 
 
