@@ -2,6 +2,7 @@ package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * @author Tobias Büser
@@ -42,6 +43,15 @@ public class HagridPacket<T> {
 
     public HagridPacket(final T payload) {
         this(StatusCode.OK, payload);
+    }
+
+    public <U> HagridPacket<U> repack(final Function<T, U> mapFunction) {
+        final U castValue = this.payload == null ? null : mapFunction.apply(this.payload);
+        return new HagridPacket<>(this.topic, this.requestId, this.status, castValue);
+    }
+
+    public HagridPacket<Void> emptyAndRepack() {
+        return this.repack(t -> null);
     }
 
     public boolean hasPayload() {
