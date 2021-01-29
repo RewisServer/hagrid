@@ -10,6 +10,7 @@ import dev.volix.rewinside.odyssey.hagrid.listener.HagridResponds;
 import dev.volix.rewinside.odyssey.hagrid.listener.Priority;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -152,6 +153,8 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                         } else {
                             declaredMethod.invoke(containingInstance, payload, req, response);
                         }
+                    } catch (final InvocationTargetException e) {
+                        throw new HagridListenerExecutionException(topic, parameter, e.getCause());
                     } catch (final Exception e) {
                         throw new HagridListenerExecutionException(topic, parameter, e);
                     }
