@@ -5,7 +5,9 @@ import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.HagridSerdes;
 import dev.volix.rewinside.odyssey.hagrid.HagridService;
 import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
+import dev.volix.rewinside.odyssey.hagrid.StandardDownstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.StandardHagridListenerRegistry;
+import dev.volix.rewinside.odyssey.hagrid.StandardUpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.exception.HagridConnectionException;
 import dev.volix.rewinside.odyssey.hagrid.kafka.util.Registry;
@@ -30,8 +32,8 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
     private final Registry<String, HagridTopic<?>> topicRegistry = new Registry<>();
 
     private final KafkaConnectionHandler connectionHandler;
-    private final KafkaUpstreamHandler upstreamHandler;
-    private final KafkaDownstreamHandler downstreamHandler;
+    private final StandardUpstreamHandler upstreamHandler;
+    private final StandardDownstreamHandler downstreamHandler;
 
     public KafkaHagridService(final String address, final String groupId, final KafkaAuth auth) {
         this.properties = new Properties();
@@ -50,8 +52,8 @@ public class KafkaHagridService extends StandardHagridListenerRegistry implement
         this.properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaPacketDeserializer.class);
 
         this.connectionHandler = new KafkaConnectionHandler(this);
-        this.upstreamHandler = new KafkaUpstreamHandler(this, this.properties);
-        this.downstreamHandler = new KafkaDownstreamHandler(this, this.properties);
+        this.upstreamHandler = new StandardUpstreamHandler(this, new KafkaHagridPublisher(this.properties));
+        this.downstreamHandler = new StandardDownstreamHandler(this, () -> new KafkaHagridSubscriber(this.properties));
     }
 
     @Override

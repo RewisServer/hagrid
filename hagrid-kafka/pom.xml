@@ -23,7 +23,13 @@
     <dependency>
       <groupId>dev.volix.rewinside.odyssey.hagrid</groupId>
       <artifactId>hagrid-core</artifactId>
-      <version>0.3.0</version>
+      <version>0.4.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>2.5.1</version>
     </dependency>
   </dependencies>
 

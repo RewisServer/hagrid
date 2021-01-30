@@ -1,43 +1,32 @@
-package dev.volix.rewinside.odyssey.hagrid.kafka;
+package dev.volix.rewinside.odyssey.hagrid;
 
-import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
-import dev.volix.rewinside.odyssey.hagrid.HagridPacket;
-import dev.volix.rewinside.odyssey.hagrid.HagridService;
-import dev.volix.rewinside.odyssey.hagrid.HagridTopic;
-import dev.volix.rewinside.odyssey.hagrid.Status;
-import dev.volix.rewinside.odyssey.hagrid.kafka.util.StoppableTask;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
-import java.time.Duration;
+import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import java.util.function.Supplier;
 
 /**
  * @author Tobias Büser
  */
-public class KafkaDownstreamHandler implements DownstreamHandler {
+public class StandardDownstreamHandler implements DownstreamHandler {
 
     private final HagridService service;
-    private final Properties properties;
+    private final Supplier<HagridSubscriber> createSubscriberFunction;
 
     private final ExecutorService threadPool = Executors.newCachedThreadPool(new DaemonThreadFactory());
-
     private final Map<String, ConsumerTask> topicsToConsumer = new HashMap<>();
 
-    public KafkaDownstreamHandler(final HagridService service, final Properties properties) {
+    public StandardDownstreamHandler(final HagridService service, final Supplier<HagridSubscriber> createSubscriberFunction) {
         this.service = service;
-        this.properties = properties;
+        this.createSubscriberFunction = createSubscriberFunction;
     }
 
     @Override
@@ -59,29 +48,31 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
         }
     }
 
-    void notifyToAddConsumer(final String topic) {
+    @Override
+    public <T> void receive(final String topic, final HagridPacket<T> packet) {
+        // notify listeners
+        this.service.executeListeners(topic, Direction.DOWNSTREAM, packet);
+    }
+
+    @Override
+    public void notifyToAddConsumer(final String topic) {
         if (this.topicsToConsumer.containsKey(topic)) return;
 
-        final Consumer<String, Packet> consumer = new KafkaConsumer<>(this.properties);
-        consumer.subscribe(Collections.singletonList(topic));
+        final HagridSubscriber subscriber = this.createSubscriberFunction.get();
+        subscriber.subscribe(Collections.singletonList(topic));
 
-        final ConsumerTask task = new ConsumerTask(this.service, this, consumer);
+        final ConsumerTask task = new ConsumerTask(this.service, this, subscriber);
         this.threadPool.execute(task);
 
         this.topicsToConsumer.put(topic, task);
     }
 
-    void notifyToRemoveConsumer(final String topic) {
+    @Override
+    public void notifyToRemoveConsumer(final String topic) {
         final ConsumerTask task = this.topicsToConsumer.remove(topic);
         if (task != null) {
             task.stop();
         }
-    }
-
-    @Override
-    public <T> void receive(final String topic, final HagridPacket<T> packet) {
-        // notify listeners
-        this.service.executeListeners(topic, Direction.DOWNSTREAM, packet);
     }
 
     private static class ConsumerTask extends StoppableTask {
@@ -89,25 +80,27 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
         private final HagridService service;
         private final DownstreamHandler handler;
 
-        private final Consumer<String, Packet> consumer;
+        private final HagridSubscriber subscriber;
 
-        public ConsumerTask(final HagridService service, final DownstreamHandler handler, final Consumer<String, Packet> consumer) {
+        public ConsumerTask(final HagridService service, final DownstreamHandler handler, final HagridSubscriber subscriber) {
             this.service = service;
             this.handler = handler;
-            this.consumer = consumer;
+            this.subscriber = subscriber;
         }
 
         @Override
         public int execute() {
-            final ConsumerRecords<String, Packet> records = this.consumer.poll(Duration.ofMillis(100));
-            for (final ConsumerRecord<String, Packet> record : records) {
-                final String recordTopic = record.topic();
+            final List<HagridSubscriber.Record> records = this.subscriber.poll();
+
+            for (final HagridSubscriber.Record record : records) {
+                final String recordTopic = record.getTopic();
                 final HagridTopic<?> registeredTopic = this.service.getTopic(recordTopic);
                 if (registeredTopic == null) {
                     // we just silently do nothing ..
                     return 0;
                 }
-                final Packet packet = record.value();
+
+                final Packet packet = record.getPacket();
 
                 final Packet.Payload packetPayload = packet.getPayload();
                 final byte[] payloadData = packetPayload.getValue().toByteArray();
@@ -133,11 +126,11 @@ public class KafkaDownstreamHandler implements DownstreamHandler {
 
         @Override
         public void onStop() {
-            this.consumer.close();
+            this.subscriber.close();
         }
 
-        public Consumer<String, Packet> getConsumer() {
-            return this.consumer;
+        public HagridSubscriber getSubscriber() {
+            return this.subscriber;
         }
 
     }
