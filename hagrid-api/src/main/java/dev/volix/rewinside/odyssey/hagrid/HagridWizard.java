@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 /**
  * @author Tobias Büser
  */
-public class HagridUpstreamWizard {
+public class HagridWizard {
 
     private final HagridService service;
 
@@ -24,45 +24,45 @@ public class HagridUpstreamWizard {
 
     private int timeoutInSeconds = HagridListener.DEFAULT_TIMEOUT_IN_SECONDS;
 
-    public HagridUpstreamWizard(final HagridService service) {
+    public HagridWizard(final HagridService service) {
         this.service = service;
     }
 
-    public HagridUpstreamWizard topic(final String topic) {
+    public HagridWizard topic(final String topic) {
         this.topic = topic;
         return this;
     }
 
-    public HagridUpstreamWizard key(final String key) {
+    public HagridWizard key(final String key) {
         this.key = key;
         return this;
     }
 
-    public HagridUpstreamWizard respondsTo(final String requestId) {
+    public HagridWizard respondsTo(final String requestId) {
         this.requestId = requestId;
         return this;
     }
 
-    public <T> HagridUpstreamWizard respondsTo(final HagridPacket<T> packet) {
+    public <T> HagridWizard respondsTo(final HagridPacket<T> packet) {
         this.topic(packet.getTopic());
         return this.respondsTo(packet.getId());
     }
 
-    public HagridUpstreamWizard status(final StatusCode code, final String message) {
+    public HagridWizard status(final StatusCode code, final String message) {
         this.status = new Status(code, message);
         return this;
     }
 
-    public HagridUpstreamWizard status(final StatusCode code) {
+    public HagridWizard status(final StatusCode code) {
         return this.status(code, "");
     }
 
-    public <T> HagridUpstreamWizard payload(final T payload) {
+    public <T> HagridWizard payload(final T payload) {
         this.payload = payload;
         return this;
     }
 
-    public HagridUpstreamWizard timeout(final int timeoutInSeconds) {
+    public HagridWizard timeout(final int timeoutInSeconds) {
         this.timeoutInSeconds = timeoutInSeconds;
         return this;
     }

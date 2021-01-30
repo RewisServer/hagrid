@@ -28,14 +28,14 @@ import java.util.stream.Collectors;
 /**
  * @author Tobias Büser
  */
-public class StandardCommunicationHandler implements CommunicationHandler {
+public class HagridCommunicationHandler implements CommunicationHandler {
 
     private final HagridService service;
 
     private final Registry<String, HagridTopic<?>> topicRegistry = new Registry<>();
     private final Map<String, List<HagridListener>> listenerRegistry = new ConcurrentHashMap<>();
 
-    public StandardCommunicationHandler(final HagridService service) {
+    public HagridCommunicationHandler(final HagridService service) {
         this.service = service;
 
         final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1, new DaemonThreadFactory());
@@ -268,7 +268,7 @@ public class StandardCommunicationHandler implements CommunicationHandler {
                     final long timeoutAt = listener.getRegisteredAt() + (listener.getTimeoutInSeconds() * 1000);
 
                     if (current >= timeoutAt) {
-                        StandardCommunicationHandler.this.unregisterListener(listener);
+                        HagridCommunicationHandler.this.unregisterListener(listener);
                         listener.executeTimeout();
                     }
                 }

@@ -11,12 +11,12 @@ import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
 /**
  * @author Tobias Büser
  */
-public class StandardUpstreamHandler implements UpstreamHandler {
+public class HagridUpstreamHandler implements UpstreamHandler {
 
     private final HagridService service;
     private HagridPublisher publisher;
 
-    public StandardUpstreamHandler(final HagridService service, final HagridPublisher publisher) {
+    public HagridUpstreamHandler(final HagridService service, final HagridPublisher publisher) {
         this.service = service;
         this.publisher = publisher;
     }

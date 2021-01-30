@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Tobias Büser
  */
-public abstract class StandardConnectionHandler implements ConnectionHandler {
+public abstract class HagridConnectionHandler implements ConnectionHandler {
 
     private final HagridService service;
 
@@ -28,7 +28,7 @@ public abstract class StandardConnectionHandler implements ConnectionHandler {
     private final ExecutorService threadPool = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
     private ReconnectTask reconnectTask;
 
-    public StandardConnectionHandler(final HagridService service) {
+    public HagridConnectionHandler(final HagridService service) {
         this.service = service;
     }
 
@@ -143,11 +143,11 @@ public abstract class StandardConnectionHandler implements ConnectionHandler {
 
         @Override
         public int execute() {
-            if (StandardConnectionHandler.this.status != Status.INACTIVE) return 0;
+            if (HagridConnectionHandler.this.status != Status.INACTIVE) return 0;
 
             try {
-                StandardConnectionHandler.this.retries++;
-                StandardConnectionHandler.this.reconnect();
+                HagridConnectionHandler.this.retries++;
+                HagridConnectionHandler.this.reconnect();
             } catch (final HagridConnectionException e) {
                 // still not able to connect ..
             }

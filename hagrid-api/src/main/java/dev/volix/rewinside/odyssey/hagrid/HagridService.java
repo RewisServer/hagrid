@@ -7,11 +7,11 @@ import dev.volix.lib.grape.Service;
  */
 public interface HagridService extends Service {
 
-    ConnectionHandler connection();
-
-    default HagridUpstreamWizard wizard() {
-        return new HagridUpstreamWizard(this);
+    default HagridWizard wizard() {
+        return new HagridWizard(this);
     }
+
+    ConnectionHandler connection();
 
     UpstreamHandler upstream();
 

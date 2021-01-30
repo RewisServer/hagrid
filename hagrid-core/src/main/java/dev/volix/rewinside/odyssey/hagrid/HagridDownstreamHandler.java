@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 /**
  * @author Tobias Büser
  */
-public class StandardDownstreamHandler implements DownstreamHandler {
+public class HagridDownstreamHandler implements DownstreamHandler {
 
     private final HagridService service;
     private final Supplier<HagridSubscriber> createSubscriberFunction;
@@ -25,7 +25,7 @@ public class StandardDownstreamHandler implements DownstreamHandler {
     private final ExecutorService threadPool = Executors.newCachedThreadPool(new DaemonThreadFactory());
     private final Map<String, ConsumerTask> topicsToConsumer = new HashMap<>();
 
-    public StandardDownstreamHandler(final HagridService service, final Supplier<HagridSubscriber> createSubscriberFunction) {
+    public HagridDownstreamHandler(final HagridService service, final Supplier<HagridSubscriber> createSubscriberFunction) {
         this.service = service;
         this.createSubscriberFunction = createSubscriberFunction;
     }
@@ -60,6 +60,7 @@ public class StandardDownstreamHandler implements DownstreamHandler {
         if (this.topicsToConsumer.containsKey(topic)) return;
 
         final HagridSubscriber subscriber = this.createSubscriberFunction.get();
+        subscriber.open();
         subscriber.subscribe(Collections.singletonList(topic));
 
         final ConsumerTask task = new ConsumerTask(this.service, this, subscriber);
