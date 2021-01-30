@@ -13,6 +13,8 @@ public interface ConnectionHandler extends Connectible {
         this.connect();
     }
 
+    void checkConnection() throws Exception;
+
     default boolean isActive() {
         return this.getStatus() == Status.ACTIVE;
     }
