@@ -1,4 +1,4 @@
-package dev.volix.rewinside.odyssey.hagrid;
+package dev.volix.rewinside.odyssey.hagrid.serdes;
 
 /**
  * @author Tobias Büser

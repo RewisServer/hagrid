@@ -87,7 +87,7 @@ public class HagridUpstreamWizard {
             .listensTo(this.id)
             .timeout(this.timeoutInSeconds)
             .build();
-        this.service.registerListener(listener);
+        this.service.communication().registerListener(listener);
 
         this.send();
         return future;

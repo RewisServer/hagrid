@@ -2,6 +2,7 @@ package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
+import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class StandardDownstreamHandler implements DownstreamHandler {
     @Override
     public <T> void receive(final String topic, final HagridPacket<T> packet) {
         // notify listeners
-        this.service.executeListeners(topic, Direction.DOWNSTREAM, packet);
+        this.service.communication().executeListeners(topic, Direction.DOWNSTREAM, packet);
     }
 
     @Override
@@ -94,7 +95,7 @@ public class StandardDownstreamHandler implements DownstreamHandler {
 
             for (final HagridSubscriber.Record record : records) {
                 final String recordTopic = record.getTopic();
-                final HagridTopic<?> registeredTopic = this.service.getTopic(recordTopic);
+                final HagridTopic<?> registeredTopic = this.service.communication().getTopic(recordTopic);
                 if (registeredTopic == null) {
                     // we just silently do nothing ..
                     return 0;

@@ -6,6 +6,7 @@ import dev.volix.rewinside.odyssey.hagrid.exception.HagridStreamException;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Status;
+import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
 
 /**
  * @author Tobias Büser
@@ -41,7 +42,7 @@ public class StandardUpstreamHandler implements UpstreamHandler {
             throw new IllegalStateException("connect() has to be called before sending packets!");
         }
 
-        final HagridTopic<T> registeredTopic = this.service.getTopic(topic);
+        final HagridTopic<T> registeredTopic = this.service.communication().getTopic(topic);
         if (registeredTopic == null) {
             throw new IllegalArgumentException("Given topic has to be registered first!");
         }
@@ -67,12 +68,12 @@ public class StandardUpstreamHandler implements UpstreamHandler {
         try {
             this.publisher.push(topic, key, protoPacket);
         } catch (final Exception ex) {
-            this.service.getConnectionHandler().handleError(ex);
+            this.service.connection().handleError(ex);
             throw new HagridStreamException(ex);
         }
 
         // notify listeners
-        this.service.executeListeners(topic, Direction.UPSTREAM, packet);
+        this.service.communication().executeListeners(topic, Direction.UPSTREAM, packet);
     }
 
 }

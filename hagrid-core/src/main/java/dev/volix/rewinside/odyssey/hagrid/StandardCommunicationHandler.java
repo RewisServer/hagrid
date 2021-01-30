@@ -4,12 +4,14 @@ import dev.volix.rewinside.odyssey.hagrid.exception.HagridListenerExecutionExcep
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListener;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerMethod;
-import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridListens;
 import dev.volix.rewinside.odyssey.hagrid.listener.HagridResponds;
 import dev.volix.rewinside.odyssey.hagrid.listener.Priority;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
+import dev.volix.rewinside.odyssey.hagrid.serdes.HagridSerdes;
+import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
+import dev.volix.rewinside.odyssey.hagrid.util.Registry;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -26,15 +28,57 @@ import java.util.stream.Collectors;
 /**
  * @author Tobias Büser
  */
-public abstract class StandardHagridListenerRegistry implements HagridListenerRegistry {
+public class StandardCommunicationHandler implements CommunicationHandler {
 
+    private final HagridService service;
+
+    private final Registry<String, HagridTopic<?>> topicRegistry = new Registry<>();
     private final Map<String, List<HagridListener>> listenerRegistry = new ConcurrentHashMap<>();
 
-    protected abstract HagridService getService();
+    public StandardCommunicationHandler(final HagridService service) {
+        this.service = service;
 
-    public StandardHagridListenerRegistry() {
         final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1, new DaemonThreadFactory());
         threadPool.scheduleAtFixedRate(new CleanupTask(this.listenerRegistry), 2, 2, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public boolean hasTopic(final String topic) {
+        return this.topicRegistry.has(topic);
+    }
+
+    @Override
+    public <T> boolean hasTopic(final Class<T> payloadClass) {
+        return this.topicRegistry.has(topic -> topic.getSerdes().getType().equals(payloadClass));
+    }
+
+    @Override
+    public <T> HagridTopic<T> getTopic(final String topic) {
+        return (HagridTopic<T>) this.topicRegistry.getOrNull(topic);
+    }
+
+    @Override
+    public <T> HagridTopic<T> getTopic(final Class<T> payloadClass) {
+        return (HagridTopic<T>) this.topicRegistry.getOrNull(topic -> topic.getSerdes().getType().equals(payloadClass));
+    }
+
+    @Override
+    public <T> void registerTopic(final String topic, final HagridSerdes<T> serdes) {
+        this.topicRegistry.register(topic, new HagridTopic<>(topic, serdes));
+
+        this.service.downstream().notifyToAddConsumer(topic);
+    }
+
+    @Override
+    public void unregisterTopic(final String topic) {
+        this.topicRegistry.unregister(topic);
+
+        this.service.downstream().notifyToRemoveConsumer(topic);
+    }
+
+    @Override
+    public <T> void unregisterTopic(final Class<T> payloadClass) {
+        this.topicRegistry.unregister(topic -> topic.getSerdes().getType().equals(payloadClass));
     }
 
     @Override
@@ -69,7 +113,7 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                 // asks for a response nonetheless
                 final Throwable cause = executionError.getCause();
 
-                this.getService().wizard().respondsTo(packet)
+                this.service.wizard().respondsTo(packet)
                     .status(StatusCode.INTERNAL, cause == null ? executionError.getMessage() : cause.getMessage())
                     .send();
             } else if (response.getPayload() != null || response.getStatus() != null) {
@@ -78,7 +122,7 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                 if (responseStatus == null) responseStatus = new Status(StatusCode.OK, "");
                 final Object responsePayload = response.getPayload();
 
-                this.getService().wizard().respondsTo(packet)
+                this.service.wizard().respondsTo(packet)
                     .status(responseStatus.getCode(), responseStatus.getMessage())
                     .payload(responsePayload)
                     .send();
@@ -224,7 +268,7 @@ public abstract class StandardHagridListenerRegistry implements HagridListenerRe
                     final long timeoutAt = listener.getRegisteredAt() + (listener.getTimeoutInSeconds() * 1000);
 
                     if (current >= timeoutAt) {
-                        StandardHagridListenerRegistry.this.unregisterListener(listener);
+                        StandardCommunicationHandler.this.unregisterListener(listener);
                         listener.executeTimeout();
                     }
                 }

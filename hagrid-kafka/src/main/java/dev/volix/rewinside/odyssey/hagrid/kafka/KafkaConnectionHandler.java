@@ -7,11 +7,15 @@ import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.KafkaAdminClient;
+import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.common.errors.TimeoutException;
 
 /**
@@ -20,8 +24,9 @@ import org.apache.kafka.common.errors.TimeoutException;
 public class KafkaConnectionHandler implements ConnectionHandler {
 
     private final HagridService service;
-    private Status status = Status.IDLE;
+    private final Properties properties;
 
+    private Status status = Status.IDLE;
     private int retries = 0;
     private long lastSuccess = 0L;
     private long lastFailure = 0L;
@@ -31,8 +36,38 @@ public class KafkaConnectionHandler implements ConnectionHandler {
     private final ExecutorService threadPool = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
     private ReconnectTask reconnectTask;
 
-    public KafkaConnectionHandler(final HagridService service) {
+    public KafkaConnectionHandler(final HagridService service, final Properties properties) {
         this.service = service;
+        this.properties = properties;
+    }
+
+    @Override
+    public void connect() throws HagridConnectionException {
+        this.service.upstream().connect();
+        this.service.upstream().connect();
+
+        try {
+            this.checkConnection();
+            this.handleSuccess();
+        } catch (final Exception e) {
+            this.handleError(e);
+            throw new HagridConnectionException(e);
+        }
+    }
+
+    @Override
+    public void disconnect() {
+        this.service.upstream().disconnect();
+        this.service.downstream().disconnect();
+
+        this.setStatus(ConnectionHandler.Status.INACTIVE);
+    }
+
+    public void checkConnection() throws ExecutionException, InterruptedException {
+        try (final AdminClient client = KafkaAdminClient.create(this.properties)) {
+            final ListTopicsResult topics = client.listTopics();
+            topics.names().get();
+        }
     }
 
     @Override
@@ -128,7 +163,7 @@ public class KafkaConnectionHandler implements ConnectionHandler {
 
             try {
                 KafkaConnectionHandler.this.retries++;
-                KafkaConnectionHandler.this.service.reconnect();
+                KafkaConnectionHandler.this.reconnect();
             } catch (final HagridConnectionException e) {
                 // still not able to connect ..
             }
