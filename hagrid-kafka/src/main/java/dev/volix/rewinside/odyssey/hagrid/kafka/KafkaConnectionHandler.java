@@ -44,7 +44,7 @@ public class KafkaConnectionHandler implements ConnectionHandler {
     @Override
     public void connect() throws HagridConnectionException {
         this.service.upstream().connect();
-        this.service.upstream().connect();
+        this.service.downstream().connect();
 
         try {
             this.checkConnection();
