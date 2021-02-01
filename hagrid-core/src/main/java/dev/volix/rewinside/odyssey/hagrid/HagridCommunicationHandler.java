@@ -10,12 +10,13 @@ import dev.volix.rewinside.odyssey.hagrid.listener.Priority;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import dev.volix.rewinside.odyssey.hagrid.serdes.HagridSerdes;
 import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
+import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopicGroup;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
-import dev.volix.rewinside.odyssey.hagrid.util.Registry;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -32,7 +34,9 @@ public class HagridCommunicationHandler implements CommunicationHandler {
 
     private final HagridService service;
 
-    private final Registry<String, HagridTopic<?>> topicRegistry = new Registry<>();
+    private static final Pattern TOPIC_REGEX = Pattern.compile("^(?:\\w+)(?:-(?:\\w+|\\*))*$");
+
+    private final Map<String, HagridTopicGroup> topicGroupRegistry = new HashMap<>();
     private final Map<String, List<HagridListener>> listenerRegistry = new ConcurrentHashMap<>();
 
     public HagridCommunicationHandler(final HagridService service) {
@@ -42,43 +46,61 @@ public class HagridCommunicationHandler implements CommunicationHandler {
         threadPool.scheduleAtFixedRate(new CleanupTask(this.listenerRegistry), 2, 2, TimeUnit.SECONDS);
     }
 
-    @Override
-    public boolean hasTopic(final String topic) {
-        return this.topicRegistry.has(topic);
+    private String getTopicPrefix(final String pattern) {
+        final String[] parts = pattern.split("-");
+        return parts[0];
     }
 
     @Override
-    public <T> boolean hasTopic(final Class<T> payloadClass) {
-        return this.topicRegistry.has(topic -> topic.getSerdes().getType().equals(payloadClass));
+    public HagridTopicGroup getTopicGroup(final String prefix) {
+        return this.topicGroupRegistry.get(prefix);
     }
 
     @Override
-    public <T> HagridTopic<T> getTopic(final String topic) {
-        return (HagridTopic<T>) this.topicRegistry.getOrNull(topic);
+    public <T> HagridTopic<T> getTopic(final String pattern) {
+        if (!TOPIC_REGEX.matcher(pattern).matches()) {
+            throw new IllegalArgumentException("pattern must be in kebab-case");
+        }
+        final String prefix = this.getTopicPrefix(pattern);
+
+        final HagridTopicGroup topicGroup = this.getTopicGroup(prefix);
+        if (topicGroup == null) throw new IllegalStateException("no topic group found for given prefix");
+
+        return (HagridTopic<T>) topicGroup.getMostFitting(pattern);
     }
 
     @Override
-    public <T> HagridTopic<T> getTopic(final Class<T> payloadClass) {
-        return (HagridTopic<T>) this.topicRegistry.getOrNull(topic -> topic.getSerdes().getType().equals(payloadClass));
+    public void registerTopic(final String pattern, final HagridSerdes<?> serdes) {
+        if (!TOPIC_REGEX.matcher(pattern).matches()) {
+            throw new IllegalArgumentException("pattern must be in kebab-case");
+        }
+        final HagridTopic<?> topic = new HagridTopic<>(pattern, serdes);
+        final String prefix = this.getTopicPrefix(pattern);
+
+        HagridTopicGroup topicGroup = this.getTopicGroup(prefix);
+
+        if (topicGroup == null) {
+            topicGroup = new HagridTopicGroup(topic);
+            this.topicGroupRegistry.put(prefix, topicGroup);
+        } else {
+            topicGroup.add(topic);
+        }
+
+        // TODO
+        // this.service.downstream().notifyToAddConsumer(pattern);
     }
 
     @Override
-    public <T> void registerTopic(final String topic, final HagridSerdes<T> serdes) {
-        this.topicRegistry.register(topic, new HagridTopic<>(topic, serdes));
+    public void unregisterTopic(final String pattern) {
+        if (!TOPIC_REGEX.matcher(pattern).matches()) return;
+        final String prefix = this.getTopicPrefix(pattern);
 
-        this.service.downstream().notifyToAddConsumer(topic);
-    }
+        final HagridTopicGroup topicGroup = this.getTopicGroup(prefix);
+        if (topicGroup == null) return;
 
-    @Override
-    public void unregisterTopic(final String topic) {
-        this.topicRegistry.unregister(topic);
+        topicGroup.remove(pattern);
 
-        this.service.downstream().notifyToRemoveConsumer(topic);
-    }
-
-    @Override
-    public <T> void unregisterTopic(final Class<T> payloadClass) {
-        this.topicRegistry.unregister(topic -> topic.getSerdes().getType().equals(payloadClass));
+        // this.service.downstream().notifyToRemoveConsumer(pattern);
     }
 
     @Override

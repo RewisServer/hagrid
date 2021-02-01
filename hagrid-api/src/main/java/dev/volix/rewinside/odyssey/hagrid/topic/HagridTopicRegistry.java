@@ -7,18 +7,28 @@ import dev.volix.rewinside.odyssey.hagrid.serdes.HagridSerdes;
  */
 public interface HagridTopicRegistry {
 
-    boolean hasTopic(String topic);
+    HagridTopicGroup getTopicGroup(String prefix);
 
-    <T> boolean hasTopic(Class<T> payloadClass);
+    default boolean hasTopicGroup(String prefix) {
+        return this.getTopicGroup(prefix) != null;
+    }
 
-    <T> HagridTopic<T> getTopic(String topic);
+    <T> HagridTopic<T> getTopic(String pattern);
 
-    <T> HagridTopic<T> getTopic(Class<T> payloadClass);
+    default <T> HagridTopic<T> getTopicOrNull(String pattern) {
+        try {
+            return this.getTopic(pattern);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 
-    <T> void registerTopic(String topic, HagridSerdes<T> serdes);
+    default boolean hasTopic(final String pattern) {
+        return this.getTopic(pattern) != null;
+    }
 
-    void unregisterTopic(String topic);
+    void registerTopic(String pattern, HagridSerdes<?> serdes);
 
-    <T> void unregisterTopic(Class<T> payloadClass);
-
+    void unregisterTopic(String pattern);
+    
 }
