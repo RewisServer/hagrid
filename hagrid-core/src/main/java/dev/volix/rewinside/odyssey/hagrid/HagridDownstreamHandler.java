@@ -6,7 +6,7 @@ import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +22,10 @@ public class HagridDownstreamHandler implements DownstreamHandler {
     private final HagridService service;
     private final Supplier<HagridSubscriber> createSubscriberFunction;
 
-    private final ExecutorService threadPool = Executors.newCachedThreadPool(new DaemonThreadFactory());
-    private final Map<String, ConsumerTask> topicsToConsumer = new HashMap<>();
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(10, new DaemonThreadFactory());
+
+    private final List<ConsumerTask> consumerTasks = new ArrayList<>();
+    private final Map<HagridTopic<?>, ConsumerTask> topicsToConsumer = new HashMap<>();
 
     public HagridDownstreamHandler(final HagridService service, final Supplier<HagridSubscriber> createSubscriberFunction) {
         this.service = service;
@@ -33,11 +35,11 @@ public class HagridDownstreamHandler implements DownstreamHandler {
     @Override
     public void connect() {
         if (this.topicsToConsumer.isEmpty()) return;
-        final List<String> topics = new ArrayList<>(this.topicsToConsumer.keySet());
+        final List<HagridTopic<?>> topics = new ArrayList<>(this.topicsToConsumer.keySet());
 
         this.topicsToConsumer.clear();
-        for (final String topic : topics) {
-            this.notifyToAddConsumer(topic);
+        for (final HagridTopic<?> topic : topics) {
+            this.addToSubscriber(topic);
         }
     }
 
@@ -51,28 +53,57 @@ public class HagridDownstreamHandler implements DownstreamHandler {
 
     @Override
     public <T> void receive(final String topic, final HagridPacket<T> packet) {
-        // notify listeners
         this.service.communication().executeListeners(topic, Direction.DOWNSTREAM, packet);
     }
 
     @Override
-    public void notifyToAddConsumer(final String topic) {
-        if (this.topicsToConsumer.containsKey(topic)) return;
-
+    public void addToNewSubscriber(final HagridTopic<?> topic) {
+        if (this.consumerTasks.size() >= 10) {
+            throw new IllegalStateException("reached maximum of parallel consumer tasks");
+        }
         final HagridSubscriber subscriber = this.createSubscriberFunction.get();
         subscriber.open();
-        subscriber.subscribe(Collections.singletonList(topic));
+        subscriber.subscribe(topic);
 
-        final ConsumerTask task = new ConsumerTask(this.service, this, subscriber);
+        final ConsumerTask task = new ConsumerTask(this.service, subscriber);
         this.threadPool.execute(task);
 
+        this.consumerTasks.add(task);
         this.topicsToConsumer.put(topic, task);
     }
 
     @Override
-    public void notifyToRemoveConsumer(final String topic) {
-        final ConsumerTask task = this.topicsToConsumer.remove(topic);
-        if (task != null) {
+    public void addToSubscriber(final HagridTopic<?> topic) {
+        if (this.consumerTasks.isEmpty() || topic.getProperties().shouldRunInParallel()) {
+            this.addToNewSubscriber(topic);
+            return;
+        }
+
+        final List<ConsumerTask> tasks = new ArrayList<>(this.consumerTasks);
+        tasks.sort(Comparator.comparingInt(o -> o.getSubscriber().getTopics().size()));
+
+        final ConsumerTask lessLoadTask = tasks.get(0);
+        lessLoadTask.getSubscriber().subscribe(topic);
+
+        this.topicsToConsumer.put(topic, lessLoadTask);
+    }
+
+    @Override
+    public HagridSubscriber getSubscriber(final HagridTopic<?> topic) {
+        final ConsumerTask task = this.topicsToConsumer.get(topic);
+        if (task == null) return null;
+        return task.getSubscriber();
+    }
+
+    @Override
+    public void removeFromSubscriber(final HagridTopic<?> topic) {
+        final ConsumerTask task = this.topicsToConsumer.get(topic);
+        if (task == null) return;
+
+        final HagridSubscriber subscriber = task.getSubscriber();
+        subscriber.unsubscribe(topic);
+
+        if (subscriber.getTopics().isEmpty()) {
             task.stop();
         }
     }
@@ -80,13 +111,11 @@ public class HagridDownstreamHandler implements DownstreamHandler {
     private static class ConsumerTask extends StoppableTask {
 
         private final HagridService service;
-        private final DownstreamHandler handler;
 
         private final HagridSubscriber subscriber;
 
-        public ConsumerTask(final HagridService service, final DownstreamHandler handler, final HagridSubscriber subscriber) {
+        public ConsumerTask(final HagridService service, final HagridSubscriber subscriber) {
             this.service = service;
-            this.handler = handler;
             this.subscriber = subscriber;
         }
 
@@ -115,7 +144,7 @@ public class HagridDownstreamHandler implements DownstreamHandler {
                 final Status status = new Status(packet.getStatus().getCode(), packet.getStatus().getMessage());
 
                 // if this throws an error, the record does not get successfuly consumed
-                this.handler.receive(recordTopic, new HagridPacket<>(
+                this.service.downstream().receive(recordTopic, new HagridPacket<>(
                     recordTopic,
                     packet.getId(),
                     packet.getRequestId(),

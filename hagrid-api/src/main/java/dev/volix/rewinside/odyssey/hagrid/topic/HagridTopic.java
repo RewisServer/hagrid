@@ -11,13 +11,20 @@ public class HagridTopic<T> implements Comparable<HagridTopic<?>> {
     private final String pattern;
     private final HagridSerdes<T> serdes;
 
+    private final TopicProperties properties;
+
     private final Pattern regexPattern;
 
-    public HagridTopic(final String pattern, final HagridSerdes<T> serdes) {
+    public HagridTopic(final String pattern, final HagridSerdes<T> serdes, final TopicProperties properties) {
         this.pattern = pattern;
         this.serdes = serdes;
+        this.properties = properties;
 
-        this.regexPattern = Pattern.compile(this.getAsRegex());
+        this.regexPattern = getTopicAsRegex(this.pattern);
+    }
+
+    public HagridTopic(final String pattern, final HagridSerdes<T> serdes) {
+        this(pattern, serdes, TopicProperties.create().build());
     }
 
     public Pattern getRegexPattern() {
@@ -32,12 +39,16 @@ public class HagridTopic<T> implements Comparable<HagridTopic<?>> {
         return this.serdes;
     }
 
-    private String getAsRegex() {
-        String regex = this.pattern.replaceAll("-\\*", "-\\\\w+");
+    public TopicProperties getProperties() {
+        return this.properties;
+    }
+
+    public static Pattern getTopicAsRegex(final String topicPattern) {
+        String regex = topicPattern.replaceAll("-\\*", "-\\\\w+");
         if (!regex.endsWith("*")) {
             regex += "(?:-\\w+)*";
         }
-        return regex;
+        return Pattern.compile(regex);
     }
 
     @Override

@@ -23,6 +23,10 @@ public class HagridTopicGroup {
         this.add(topic);
     }
 
+    public HagridTopic<?> getTopicExactly(final String pattern) {
+        return this.topics.get(pattern);
+    }
+
     public HagridTopic<?> getMostFitting(final String topicPattern) {
         if (this.topics.containsKey(topicPattern)) {
             return this.topics.get(topicPattern);

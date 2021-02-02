@@ -11,6 +11,7 @@ import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import dev.volix.rewinside.odyssey.hagrid.serdes.HagridSerdes;
 import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
 import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopicGroup;
+import dev.volix.rewinside.odyssey.hagrid.topic.TopicProperties;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -37,7 +38,7 @@ public class HagridCommunicationHandler implements CommunicationHandler {
     private static final Pattern TOPIC_REGEX = Pattern.compile("^(?:\\w+)(?:-(?:\\w+|\\*))*$");
 
     private final Map<String, HagridTopicGroup> topicGroupRegistry = new HashMap<>();
-    private final Map<String, List<HagridListener>> listenerRegistry = new ConcurrentHashMap<>();
+    private final Map<Pattern, List<HagridListener>> listenerRegistry = new ConcurrentHashMap<>();
 
     public HagridCommunicationHandler(final HagridService service) {
         this.service = service;
@@ -66,15 +67,18 @@ public class HagridCommunicationHandler implements CommunicationHandler {
         final HagridTopicGroup topicGroup = this.getTopicGroup(prefix);
         if (topicGroup == null) throw new IllegalStateException("no topic group found for given prefix");
 
+        final HagridTopic<?> topic = topicGroup.getTopicExactly(pattern);
+        if (topic != null) return (HagridTopic<T>) topic;
+
         return (HagridTopic<T>) topicGroup.getMostFitting(pattern);
     }
 
     @Override
-    public void registerTopic(final String pattern, final HagridSerdes<?> serdes) {
+    public void registerTopic(final String pattern, final HagridSerdes<?> serdes, final TopicProperties properties) {
         if (!TOPIC_REGEX.matcher(pattern).matches()) {
             throw new IllegalArgumentException("pattern must be in kebab-case");
         }
-        final HagridTopic<?> topic = new HagridTopic<>(pattern, serdes);
+        final HagridTopic<?> topic = new HagridTopic<>(pattern, serdes, properties);
         final String prefix = this.getTopicPrefix(pattern);
 
         HagridTopicGroup topicGroup = this.getTopicGroup(prefix);
@@ -86,8 +90,7 @@ public class HagridCommunicationHandler implements CommunicationHandler {
             topicGroup.add(topic);
         }
 
-        // TODO
-        // this.service.downstream().notifyToAddConsumer(pattern);
+        this.service.downstream().addToSubscriber(topic);
     }
 
     @Override
@@ -98,9 +101,11 @@ public class HagridCommunicationHandler implements CommunicationHandler {
         final HagridTopicGroup topicGroup = this.getTopicGroup(prefix);
         if (topicGroup == null) return;
 
+        final HagridTopic<?> topic = topicGroup.getTopicExactly(pattern);
+        if (topic == null) return;
         topicGroup.remove(pattern);
 
-        // this.service.downstream().notifyToRemoveConsumer(pattern);
+        this.service.downstream().removeFromSubscriber(topic);
     }
 
     @Override
@@ -120,7 +125,8 @@ public class HagridCommunicationHandler implements CommunicationHandler {
             }
 
             final HagridResponse response = new HagridResponse();
-            final T payload = listener.getPayloadClass() == null ? null : payloadOptional.orElse(null);
+            final T payload = listener.getPayloadClass() == null
+                || listener.getPayloadClass() == Void.class ? null : payloadOptional.orElse(null);
 
             Throwable executionError = null;
 
@@ -159,7 +165,8 @@ public class HagridCommunicationHandler implements CommunicationHandler {
 
     @Override
     public boolean hasListener(final String topic, final Class<?> payloadClass) {
-        final List<HagridListener> listeners = this.listenerRegistry.get(topic);
+        final Pattern pattern = HagridTopic.getTopicAsRegex(topic);
+        final List<HagridListener> listeners = this.listenerRegistry.get(pattern);
         if (listeners == null || listeners.isEmpty()) return false;
 
         return listeners.stream().anyMatch(hagridListener ->
@@ -168,9 +175,15 @@ public class HagridCommunicationHandler implements CommunicationHandler {
 
     @Override
     public void registerListener(final HagridListener listener) {
-        final List<HagridListener> listeners = this.listenerRegistry.getOrDefault(listener.getTopic(), new ArrayList<>());
+        if (!TOPIC_REGEX.matcher(listener.getTopic()).matches()) {
+            throw new IllegalArgumentException("listener topic needs to be in kebab-case");
+        }
+        final Pattern pattern = HagridTopic.getTopicAsRegex(listener.getTopic());
+
+        final List<HagridListener> listeners = this.listenerRegistry.getOrDefault(pattern, new ArrayList<>());
         listeners.add(listener);
-        this.listenerRegistry.put(listener.getTopic(), listeners);
+
+        this.listenerRegistry.put(pattern, listeners);
 
         listener.setRegisteredAt(System.currentTimeMillis());
     }
@@ -232,35 +245,44 @@ public class HagridCommunicationHandler implements CommunicationHandler {
 
     @Override
     public void unregisterListener(final HagridListener listener) {
-        final List<HagridListener> listeners = this.listenerRegistry.get(listener.getTopic());
+        final Pattern pattern = HagridTopic.getTopicAsRegex(listener.getTopic());
+        final List<HagridListener> listeners = this.listenerRegistry.get(pattern);
         if (listeners == null) return;
         listeners.remove(listener);
     }
 
     @Override
     public void unregisterListener(final String topic, final Class<?> payloadClass) {
-        final List<HagridListener> listeners = this.listenerRegistry.get(topic);
+        final Pattern pattern = HagridTopic.getTopicAsRegex(topic);
+        final List<HagridListener> listeners = this.listenerRegistry.get(pattern);
         if (listeners == null) return;
         listeners.removeIf(hagridListener -> hagridListener.getPayloadClass().equals(payloadClass));
     }
 
     @Override
     public void unregisterListener(final String topic) {
-        this.listenerRegistry.entrySet().removeIf(stringListEntry -> stringListEntry.getKey().equals(topic));
+        final Pattern pattern = HagridTopic.getTopicAsRegex(topic);
+        this.listenerRegistry.entrySet().removeIf(stringListEntry -> stringListEntry.getKey().equals(pattern));
     }
 
     @Override
     public List<HagridListener> getListener(final String topic, final Class<?> payloadClass) {
-        final List<HagridListener> listeners = this.listenerRegistry.getOrDefault(topic, new ArrayList<>());
+        final List<HagridListener> listeners = new ArrayList<>();
+        for (final Pattern pattern : this.listenerRegistry.keySet()) {
+            if (pattern.matcher(topic).matches()) {
+                listeners.addAll(this.listenerRegistry.get(pattern));
+            }
+        }
         if (listeners.isEmpty()) return new ArrayList<>();
 
         return listeners.stream()
             .filter(hagridListener -> {
                 if (payloadClass == null) {
-                    return hagridListener.getPayloadClass() == null
+                    return hagridListener.getPayloadClass() == null || hagridListener.getPayloadClass() == Void.class
                         || hagridListener.getListenId() != null;
                 }
                 return hagridListener.getPayloadClass() == null
+                    || hagridListener.getPayloadClass() == Void.class
                     || hagridListener.getPayloadClass().isAssignableFrom(payloadClass);
             })
             .collect(Collectors.toList());
@@ -268,22 +290,23 @@ public class HagridCommunicationHandler implements CommunicationHandler {
 
     @Override
     public List<HagridListener> getListener(final String topic) {
-        return this.listenerRegistry.getOrDefault(topic, new ArrayList<>());
+        final Pattern pattern = HagridTopic.getTopicAsRegex(topic);
+        return this.listenerRegistry.getOrDefault(pattern, new ArrayList<>());
     }
 
     private class CleanupTask implements Runnable {
 
-        private final Map<String, List<HagridListener>> listenerRegistry;
+        private final Map<Pattern, List<HagridListener>> listenerRegistry;
 
-        public CleanupTask(final Map<String, List<HagridListener>> listenerRegistry) {
+        public CleanupTask(final Map<Pattern, List<HagridListener>> listenerRegistry) {
             this.listenerRegistry = listenerRegistry;
         }
 
         @Override
         public void run() {
             final long current = System.currentTimeMillis();
-            for (final String topic : this.listenerRegistry.keySet()) {
-                final List<HagridListener> listenersCopy = new ArrayList<>(this.listenerRegistry.get(topic));
+            for (final Pattern pattern : this.listenerRegistry.keySet()) {
+                final List<HagridListener> listenersCopy = new ArrayList<>(this.listenerRegistry.get(pattern));
 
                 for (final HagridListener listener : listenersCopy) {
                     if (listener.getTimeoutInSeconds() <= 0) continue;

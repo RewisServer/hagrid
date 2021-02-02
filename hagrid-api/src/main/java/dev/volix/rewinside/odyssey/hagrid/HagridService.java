@@ -1,6 +1,7 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.lib.grape.Service;
+import dev.volix.rewinside.odyssey.hagrid.exception.HagridConnectionException;
 
 /**
  * @author Tobias Büser
@@ -12,6 +13,14 @@ public interface HagridService extends Service {
     }
 
     ConnectionHandler connection();
+
+    default void connect() throws HagridConnectionException {
+        this.connection().connect();
+    }
+
+    default void disconnect() {
+        this.connection().disconnect();
+    }
 
     UpstreamHandler upstream();
 

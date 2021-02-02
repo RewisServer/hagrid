@@ -2,9 +2,12 @@ package dev.volix.rewinside.odyssey.hagrid.kafka;
 
 import dev.volix.rewinside.odyssey.hagrid.HagridSubscriber;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
+import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,6 +19,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
  */
 public class KafkaHagridSubscriber implements HagridSubscriber {
 
+    private final Map<String, HagridTopic<?>> topics = new HashMap<>();
     private final Properties properties;
 
     private Consumer<String, Packet> consumer;
@@ -36,9 +40,35 @@ public class KafkaHagridSubscriber implements HagridSubscriber {
     }
 
     @Override
-    public void subscribe(final List<String> topics) {
+    public List<HagridTopic<?>> getTopics() {
+        return new ArrayList<>(this.topics.values());
+    }
+
+    @Override
+    public void unsubscribe(final HagridTopic<?> topic) {
+        if (!this.topics.containsKey(topic.getPattern())) {
+            return;
+        }
+        this.topics.remove(topic.getPattern());
+
         if (this.consumer != null) {
-            this.subscribe(topics);
+            this.consumer.unsubscribe();
+
+            for (final HagridTopic<?> value : this.topics.values()) {
+                this.consumer.subscribe(value.getRegexPattern());
+            }
+        }
+    }
+
+    @Override
+    public void subscribe(final HagridTopic<?> topic) {
+        if (this.topics.containsKey(topic.getPattern())) {
+            return;
+        }
+        this.topics.put(topic.getPattern(), topic);
+
+        if (this.consumer != null) {
+            this.consumer.subscribe(topic.getRegexPattern());
         }
     }
 
