@@ -10,12 +10,16 @@ public class Status {
     private final StatusCode code;
     private final String message;
 
-    public Status(StatusCode code, String message) {
+    public Status(final StatusCode code, final String message) {
         this.code = code;
         this.message = message;
     }
 
-    public boolean is(StatusCode code) {
+    public Status(final StatusCode code) {
+        this(code, "");
+    }
+
+    public boolean is(final StatusCode code) {
         return this.getCode() == code;
     }
 
@@ -28,11 +32,11 @@ public class Status {
     }
 
     public StatusCode getCode() {
-        return code;
+        return this.code;
     }
 
     public String getMessage() {
-        return message;
+        return this.message;
     }
 
     @Override

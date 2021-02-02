@@ -3,7 +3,9 @@ package dev.volix.rewinside.odyssey.hagrid;
 /**
  * @author Tobias Büser
  */
-public interface ConnectionHandler {
+public interface ConnectionHandler extends Connectible {
+
+    void checkConnection() throws Exception;
 
     default boolean isActive() {
         return this.getStatus() == Status.ACTIVE;

@@ -1,4 +1,4 @@
-package dev.volix.rewinside.odyssey.hagrid.kafka.util;
+package dev.volix.rewinside.odyssey.hagrid.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,108 +22,108 @@ public class Registry<K, V> {
         return new HashMap<>(this.registry);
     }
 
-    public boolean has(K key) {
+    public boolean has(final K key) {
         return this.registry.containsKey(key);
     }
 
-    public boolean has(Predicate<V> filter) {
+    public boolean has(final Predicate<V> filter) {
         return this.find(filter).isPresent();
     }
 
-    public void register(K key, V value) {
+    public void register(final K key, final V value) {
         if (this.has(key)) {
             throw new IllegalStateException("There is already a value registered with key " + key);
         }
         this.registry.put(key, value);
 
-        List<Consumer<V>> callbacks = this.callbacks.remove(key);
+        final List<Consumer<V>> callbacks = this.callbacks.remove(key);
         if (callbacks != null) {
             callbacks.forEach(c -> c.accept(value));
         }
     }
 
-    public void unregister(K key) {
+    public void unregister(final K key) {
         this.registry.remove(key);
     }
 
-    public void unregister(Predicate<V> filter) {
+    public void unregister(final Predicate<V> filter) {
         this.registry.entrySet().removeIf(kvEntry -> filter.test(kvEntry.getValue()));
     }
 
-    protected Optional<V> find(Predicate<V> filter, K key) {
+    protected Optional<V> find(final Predicate<V> filter, final K key) {
         if (key != null && this.has(key)) {
             return Optional.of(this.registry.get(key));
         }
-        if(filter == null) {
+        if (filter == null) {
             return Optional.ofNullable(this.registry.get(key));
         }
         return this.registry.values().stream().filter(filter).findFirst();
     }
 
-    public Optional<V> find(Predicate<V> filter) {
+    public Optional<V> find(final Predicate<V> filter) {
         return this.find(filter, null);
     }
 
-    public Optional<V> find(K key) {
+    public Optional<V> find(final K key) {
         return this.find(null, key);
     }
 
-    protected V getOrDefault(Predicate<V> filter, K key, V defaultValue) {
+    protected V getOrDefault(final Predicate<V> filter, final K key, final V defaultValue) {
         return this.find(filter, key).orElse(defaultValue);
     }
 
-    public V getOrDefault(K key, V defaultValue) {
+    public V getOrDefault(final K key, final V defaultValue) {
         return this.getOrDefault(null, key, defaultValue);
     }
 
-    public V getOrDefault(Predicate<V> filter, V defaultValue) {
+    public V getOrDefault(final Predicate<V> filter, final V defaultValue) {
         return this.getOrDefault(filter, null, defaultValue);
     }
 
-    protected V getOrNull(Predicate<V> filter, K key) {
+    protected V getOrNull(final Predicate<V> filter, final K key) {
         return this.getOrDefault(filter, key, (V) null);
     }
 
-    public V getOrNull(K key) {
+    public V getOrNull(final K key) {
         return this.getOrNull(null, key);
     }
 
-    public V getOrNull(Predicate<V> filter) {
+    public V getOrNull(final Predicate<V> filter) {
         return this.getOrNull(filter, null);
     }
 
-    protected void get(Predicate<V> filter, K key, Consumer<V> callback) {
-        Optional<V> provider = this.find(key);
+    protected void get(final Predicate<V> filter, final K key, final Consumer<V> callback) {
+        final Optional<V> provider = this.find(key);
 
         if (provider.isPresent()) {
             callback.accept(provider.get());
             return;
         }
 
-        List<Consumer<V>> callbacks = this.callbacks.getOrDefault(key, new ArrayList<>());
+        final List<Consumer<V>> callbacks = this.callbacks.getOrDefault(key, new ArrayList<>());
         callbacks.add(new PredicatedConsumer<>(filter, callback));
         this.callbacks.put(key, callbacks);
     }
 
-    public void get(K key, Consumer<V> callback) {
+    public void get(final K key, final Consumer<V> callback) {
         this.get(null, key, callback);
     }
 
-    public void get(Predicate<V> filter, Consumer<V> callback) {
+    public void get(final Predicate<V> filter, final Consumer<V> callback) {
         this.get(filter, null, callback);
     }
 
-    protected CompletableFuture<V> get(Predicate<V> filter, K key) {
-        CompletableFuture<V> future = new CompletableFuture<>();
+    protected CompletableFuture<V> get(final Predicate<V> filter, final K key) {
+        final CompletableFuture<V> future = new CompletableFuture<>();
         this.get(key, future::complete);
         return future;
     }
 
-    public CompletableFuture<V> get(K key) {
+    public CompletableFuture<V> get(final K key) {
         return this.get(null, key);
     }
 
-    public CompletableFuture<V> get(Predicate<V> filter) {
+    public CompletableFuture<V> get(final Predicate<V> filter) {
         return this.get(filter, (K) null);
     }
 
@@ -132,14 +132,14 @@ public class Registry<K, V> {
         private final Predicate<V> predicate;
         private final Consumer<V> consumer;
 
-        public PredicatedConsumer(Predicate<V> predicate, Consumer<V> consumer) {
+        public PredicatedConsumer(final Predicate<V> predicate, final Consumer<V> consumer) {
             this.predicate = predicate;
             this.consumer = consumer;
         }
 
         @Override
-        public void accept(V v) {
-            if(predicate == null || predicate.test(v)) {
+        public void accept(final V v) {
+            if (this.predicate == null || this.predicate.test(v)) {
                 this.consumer.accept(v);
             }
         }

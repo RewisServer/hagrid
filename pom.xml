@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>dev.volix.rewinside.odyssey.hagrid</groupId>
-  <artifactId>hagrid-java</artifactId>
+  <artifactId>hagrid</artifactId>
   <packaging>pom</packaging>
   <version>0.1.0</version>
   <modules>

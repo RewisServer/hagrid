@@ -1,5 +1,9 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
+import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
+import java.util.Optional;
+import java.util.function.Function;
+
 /**
  * @author Tobias Büser
  */
@@ -13,7 +17,7 @@ public class HagridPacket<T> {
 
     private final T payload;
 
-    public HagridPacket(String topic, String id, String requestId, Status status, T payload) {
+    public HagridPacket(final String topic, final String id, final String requestId, final Status status, final T payload) {
         this.topic = topic;
         this.id = id;
         this.requestId = requestId;
@@ -21,8 +25,33 @@ public class HagridPacket<T> {
         this.payload = payload;
     }
 
-    public HagridPacket(String topic, String requestId, Status status, T payload) {
+    public HagridPacket(final String topic, final String requestId, final Status status, final T payload) {
         this(topic, null, requestId, status, payload);
+    }
+
+    public HagridPacket(final String topic, final Status status, final T payload) {
+        this(topic, "", status, payload);
+    }
+
+    public HagridPacket(final Status status, final T payload) {
+        this("", status, payload);
+    }
+
+    public HagridPacket(final StatusCode code, final T payload) {
+        this(new Status(code), payload);
+    }
+
+    public HagridPacket(final T payload) {
+        this(StatusCode.OK, payload);
+    }
+
+    public <U> HagridPacket<U> repack(final Function<T, U> mapFunction) {
+        final U castValue = this.payload == null ? null : mapFunction.apply(this.payload);
+        return new HagridPacket<>(this.topic, this.requestId, this.status, castValue);
+    }
+
+    public HagridPacket<Void> emptyAndRepack() {
+        return this.repack(t -> null);
     }
 
     public boolean hasPayload() {
@@ -30,33 +59,41 @@ public class HagridPacket<T> {
     }
 
     public String getTopic() {
-        return topic;
+        return this.topic;
     }
 
     public String getId() {
-        return id;
+        return this.id;
     }
 
     public String getRequestId() {
-        return requestId;
+        return this.requestId;
     }
 
     public Status getStatus() {
-        return status;
+        return this.status;
     }
 
-    public T getPayload() {
-        return payload;
+    public Optional<T> getPayload() {
+        return Optional.ofNullable(this.payload);
+    }
+
+    public T getPayloadOrNull() {
+        return this.payload;
+    }
+
+    public T getPayloadOrDefault(final T defaultT) {
+        return this.payload == null ? defaultT : this.payload;
     }
 
     @Override
     public String toString() {
         return "HagridPacket{" +
-            "topic='" + topic + '\'' +
-            ", id='" + id + '\'' +
-            ", requestId='" + requestId + '\'' +
-            ", status=" + status +
-            ", payload=" + payload +
+            "topic='" + this.topic + '\'' +
+            ", id='" + this.id + '\'' +
+            ", requestId='" + this.requestId + '\'' +
+            ", status=" + this.status +
+            ", payload=" + this.payload +
             '}';
     }
 

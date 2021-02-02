@@ -2,32 +2,31 @@ package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.lib.grape.Service;
 import dev.volix.rewinside.odyssey.hagrid.exception.HagridConnectionException;
-import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerRegistry;
 
 /**
  * @author Tobias Büser
  */
-public interface HagridService extends HagridTopicRegistry, HagridListenerRegistry, Service, Connectible {
+public interface HagridService extends Service {
 
-    @Override
-    default void reconnect() throws HagridConnectionException {
-        this.disconnect();
-        this.connect();
+    default HagridWizard wizard() {
+        return new HagridWizard(this);
     }
 
-    ConnectionHandler getConnectionHandler();
+    ConnectionHandler connection();
 
-    default boolean isConnected() {
-        return this.getConnectionHandler().isActive();
+    default void connect() throws HagridConnectionException {
+        this.connection().connect();
     }
 
-    default HagridUpstreamWizard wizard() {
-        return new HagridUpstreamWizard(this);
+    default void disconnect() {
+        this.connection().disconnect();
     }
 
     UpstreamHandler upstream();
 
     DownstreamHandler downstream();
+
+    CommunicationHandler communication();
 
     default boolean blowjob() {
         return true;
