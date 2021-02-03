@@ -235,9 +235,9 @@ public class HagridCommunicationHandler implements CommunicationHandler {
                             declaredMethod.invoke(containingInstance, payload, req, response);
                         }
                     } catch (final InvocationTargetException e) {
-                        throw new HagridListenerExecutionException(topic, parameter, e.getCause());
+                        throw new HagridListenerExecutionException(req.getTopic(), parameter, e.getCause());
                     } catch (final Exception e) {
-                        throw new HagridListenerExecutionException(topic, parameter, e);
+                        throw new HagridListenerExecutionException(req.getTopic(), parameter, e);
                     }
                 }
             }).topic(topic).direction(direction).payloadClass(parameter)
