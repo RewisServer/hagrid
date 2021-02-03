@@ -84,7 +84,9 @@ public abstract class HagridConnectionHandler implements ConnectionHandler {
             }
 
             if (this.reconnectTask != null && this.reconnectTask.isRunning()) return;
-            this.reconnectTask = new ReconnectTask(Duration.of(10, ChronoUnit.SECONDS));
+            final int delayInSeconds = this.service.getConfiguration().getInt(HagridConfig.RECONNECT_DELAY_IN_SECONDS);
+
+            this.reconnectTask = new ReconnectTask(Duration.of(delayInSeconds, ChronoUnit.SECONDS));
             this.threadPool.execute(this.reconnectTask);
         }
     }

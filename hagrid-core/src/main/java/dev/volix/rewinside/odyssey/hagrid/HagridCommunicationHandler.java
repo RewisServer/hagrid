@@ -44,7 +44,9 @@ public class HagridCommunicationHandler implements CommunicationHandler {
         this.service = service;
 
         final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1, new DaemonThreadFactory());
-        threadPool.scheduleAtFixedRate(new CleanupTask(this.listenerRegistry), 2, 2, TimeUnit.SECONDS);
+
+        final int cleanupDelayInSeconds = service.getConfiguration().getInt(HagridConfig.LISTENER_CLEANUP_DELAY_IN_SECONDS);
+        threadPool.scheduleAtFixedRate(new CleanupTask(this.listenerRegistry), cleanupDelayInSeconds, cleanupDelayInSeconds, TimeUnit.SECONDS);
     }
 
     private String getTopicPrefix(final String pattern) {

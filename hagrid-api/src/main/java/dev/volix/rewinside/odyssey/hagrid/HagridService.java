@@ -1,12 +1,15 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.lib.grape.Service;
+import dev.volix.rewinside.odyssey.hagrid.config.PropertiesConfig;
 import dev.volix.rewinside.odyssey.hagrid.exception.HagridConnectionException;
 
 /**
  * @author Tobias Büser
  */
 public interface HagridService extends Service {
+
+    PropertiesConfig getConfiguration();
 
     default HagridWizard wizard() {
         return new HagridWizard(this);

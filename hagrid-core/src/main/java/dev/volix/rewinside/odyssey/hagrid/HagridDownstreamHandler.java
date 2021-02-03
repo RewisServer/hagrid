@@ -22,7 +22,8 @@ public class HagridDownstreamHandler implements DownstreamHandler {
     private final HagridService service;
     private final Supplier<HagridSubscriber> createSubscriberFunction;
 
-    private final ExecutorService threadPool = Executors.newFixedThreadPool(10, new DaemonThreadFactory());
+    private final int maxSubscriber;
+    private final ExecutorService threadPool;
 
     private final List<ConsumerTask> consumerTasks = new ArrayList<>();
     private final Map<HagridTopic<?>, ConsumerTask> topicsToConsumer = new HashMap<>();
@@ -30,6 +31,9 @@ public class HagridDownstreamHandler implements DownstreamHandler {
     public HagridDownstreamHandler(final HagridService service, final Supplier<HagridSubscriber> createSubscriberFunction) {
         this.service = service;
         this.createSubscriberFunction = createSubscriberFunction;
+
+        this.maxSubscriber = service.getConfiguration().getInt(HagridConfig.MAX_SUBSCRIBER);
+        this.threadPool = Executors.newFixedThreadPool(this.maxSubscriber, new DaemonThreadFactory());
     }
 
     @Override
@@ -58,7 +62,7 @@ public class HagridDownstreamHandler implements DownstreamHandler {
 
     @Override
     public void addToNewSubscriber(final HagridTopic<?> topic) {
-        if (this.consumerTasks.size() >= 10) {
+        if (this.consumerTasks.size() >= this.maxSubscriber) {
             throw new IllegalStateException("reached maximum of parallel consumer tasks");
         }
         final HagridSubscriber subscriber = this.createSubscriberFunction.get();
