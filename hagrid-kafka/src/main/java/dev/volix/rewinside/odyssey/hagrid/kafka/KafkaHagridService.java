@@ -8,6 +8,8 @@ import dev.volix.rewinside.odyssey.hagrid.HagridDownstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.HagridService;
 import dev.volix.rewinside.odyssey.hagrid.HagridUpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -27,9 +29,9 @@ public class KafkaHagridService implements HagridService {
     private final HagridDownstreamHandler downstreamHandler;
     private final HagridCommunicationHandler communicationHandler;
 
-    public KafkaHagridService(final String address, final String groupId, final KafkaAuth auth) {
+    public KafkaHagridService(final List<String> brokerAddresses, final String groupId, final KafkaAuth auth) {
         this.properties = new Properties();
-        this.properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, address);
+        this.properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.join(",", brokerAddresses));
         this.properties.put(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, 3000);
         this.properties.put(CommonClientConfigs.DEFAULT_API_TIMEOUT_MS_CONFIG, 3000);
 
@@ -47,6 +49,10 @@ public class KafkaHagridService implements HagridService {
         this.upstreamHandler = new HagridUpstreamHandler(this, new KafkaHagridPublisher(this.properties));
         this.downstreamHandler = new HagridDownstreamHandler(this, () -> new KafkaHagridSubscriber(this.properties));
         this.communicationHandler = new HagridCommunicationHandler(this);
+    }
+
+    public KafkaHagridService(final String address, final String groupId, final KafkaAuth auth) {
+        this(Collections.singletonList(address), groupId, auth);
     }
 
     @Override
