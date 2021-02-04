@@ -27,9 +27,8 @@ public class MessageHagridSerdes implements HagridSerdes<Message> {
 
             return defaultInstance.getParserForType().parseFrom(data);
         } catch (final InvalidProtocolBufferException | ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
 }

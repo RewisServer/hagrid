@@ -6,10 +6,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * The topic group is a wrapper for a sorted list of topics to
+ * better determine which registered topic fits best for a
+ * given topic name.
+ * <p>
+ * For example if I have a topic {@code volix-party} and I want to know
+ * which of the registered topics (e.g. {@code volix-*}, {@code volix-party-*}, ..)
+ * fits best, we can easily use {@link #getMostFitting(String)}.
+ *
  * @author Tobias Büser
  */
 public class HagridTopicGroup {
 
+    /**
+     * As every topic begins with a fixed set of alphanumerical characters
+     * we can determine a prefix from that, so that we can map
+     * this group to a key.
+     * <p>
+     * e.g.: For {@code volix-rewinside-odyssey} the prefix would be {@code volix}.
+     */
     private final String prefix;
 
     private final Map<String, HagridTopic<?>> topics = new HashMap<>();
@@ -23,10 +38,23 @@ public class HagridTopicGroup {
         this.add(topic);
     }
 
+    /**
+     * @param pattern The topic pattern.
+     *
+     * @return A registered topic only, if the given pattern is exactly like
+     * the pattern the topic got registered with.
+     */
     public HagridTopic<?> getTopicExactly(final String pattern) {
         return this.topics.get(pattern);
     }
 
+    /**
+     * @param topicPattern The topic pattern to check
+     *
+     * @return A registered topic that matches given pattern the most. This means
+     * that we do not choose the most abstract, but the less abstract one which
+     * still matches the topic.
+     */
     public HagridTopic<?> getMostFitting(final String topicPattern) {
         if (this.topics.containsKey(topicPattern)) {
             return this.topics.get(topicPattern);
@@ -49,6 +77,13 @@ public class HagridTopicGroup {
         return null;
     }
 
+    /**
+     * Adds a new topic to the map and sorts an internal list
+     * with {@link HagridTopic#compareTo(HagridTopic)}.
+     * If a topic like this already exists, it will get overriden.
+     *
+     * @param topic The topic to register
+     */
     public void add(final HagridTopic<?> topic) {
         final boolean contains = this.topics.containsKey(topic.getPattern());
         this.topics.put(topic.getPattern(), topic);
@@ -59,6 +94,12 @@ public class HagridTopicGroup {
         }
     }
 
+    /**
+     * Removes given topic and sorts the internal list if a topic
+     * to unregister has been found.
+     *
+     * @param topicPattern The pattern of the topic to unregister.
+     */
     public void remove(final String topicPattern) {
         final HagridTopic<?> topic = this.topics.remove(topicPattern);
 
