@@ -9,7 +9,6 @@ import java.util.function.Consumer;
  */
 public interface PacketWizard {
 
-
     PacketWizard topic(final String topic);
 
     PacketWizard key(final String key);

@@ -146,7 +146,7 @@ public class HagridCommunicationHandler implements CommunicationHandler {
                 this.service.wizard().respondsTo(packet)
                     .status(StatusCode.INTERNAL, cause == null ? executionError.getMessage() : cause.getMessage())
                     .send();
-            } else if (response.getPayload() != null || response.getStatus() != null) {
+            } else if (response.getPayload() != null || response.getStatus() != null || listener.isResponsive()) {
                 // everything worked fine and he filled the response object
                 Status responseStatus = response.getStatus();
                 if (responseStatus == null) responseStatus = new Status(StatusCode.OK, "");
