@@ -6,8 +6,10 @@ import dev.volix.rewinside.odyssey.hagrid.DownstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.HagridCommunicationHandler;
 import dev.volix.rewinside.odyssey.hagrid.HagridConfig;
 import dev.volix.rewinside.odyssey.hagrid.HagridDownstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.HagridPacketWizard;
 import dev.volix.rewinside.odyssey.hagrid.HagridService;
 import dev.volix.rewinside.odyssey.hagrid.HagridUpstreamHandler;
+import dev.volix.rewinside.odyssey.hagrid.PacketWizard;
 import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.config.PropertiesConfig;
 import java.util.Collections;
@@ -96,6 +98,11 @@ public class KafkaHagridService implements HagridService {
     @Override
     public PropertiesConfig getConfiguration() {
         return this.hagridConfig;
+    }
+
+    @Override
+    public PacketWizard wizard() {
+        return new HagridPacketWizard(this);
     }
 
     @Override

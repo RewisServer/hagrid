@@ -6,12 +6,11 @@ import dev.volix.rewinside.odyssey.hagrid.listener.HagridListenerMethod;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 /**
  * @author Tobias Büser
  */
-public class HagridWizard {
+public class HagridPacketWizard implements PacketWizard {
 
     private final HagridService service;
 
@@ -22,57 +21,58 @@ public class HagridWizard {
     private Status status = new Status(StatusCode.OK);
     private Object payload;
 
-    private int timeoutInSeconds = HagridListener.DEFAULT_TIMEOUT_IN_SECONDS;
+    private int timeoutInSeconds;
 
-    public HagridWizard(final HagridService service) {
+    public HagridPacketWizard(final HagridService service) {
         this.service = service;
+
+        this.timeoutInSeconds = service.getConfiguration().getInt(HagridConfig.LISTENER_DEFAULT_TIMEOUT_IN_SECONDS);
     }
 
-    public HagridWizard topic(final String topic) {
+    @Override
+    public PacketWizard topic(final String topic) {
         this.topic = topic;
         return this;
     }
 
-    public HagridWizard key(final String key) {
+    @Override
+    public PacketWizard key(final String key) {
         this.key = key;
         return this;
     }
 
-    public HagridWizard respondsTo(final String requestId) {
+    @Override
+    public PacketWizard respondsTo(final String requestId) {
         this.requestId = requestId;
         return this;
     }
 
-    public <T> HagridWizard respondsTo(final HagridPacket<T> packet) {
-        this.topic(packet.getTopic());
-        return this.respondsTo(packet.getId());
-    }
-
-    public HagridWizard status(final StatusCode code, final String message) {
+    @Override
+    public PacketWizard status(final StatusCode code, final String message) {
         this.status = new Status(code, message);
         return this;
     }
 
-    public HagridWizard status(final StatusCode code) {
-        return this.status(code, "");
-    }
-
-    public <T> HagridWizard payload(final T payload) {
+    @Override
+    public <T> PacketWizard payload(final T payload) {
         this.payload = payload;
         return this;
     }
 
-    public HagridWizard timeout(final int timeoutInSeconds) {
+    @Override
+    public PacketWizard timeout(final int timeoutInSeconds) {
         this.timeoutInSeconds = timeoutInSeconds;
         return this;
     }
 
+    @Override
     public void send() {
         final HagridPacket<?> packet = new HagridPacket<>(this.topic, this.id, this.requestId, this.status, this.payload);
 
         this.service.upstream().send(this.topic, this.key, packet);
     }
 
+    @Override
     public <T> CompletableFuture<HagridPacket<T>> sendAndWait(final Class<T> payloadClass) {
         final CompletableFuture<HagridPacket<T>> future = new CompletableFuture<>();
         final HagridListener listener = HagridListener.builder(
@@ -91,18 +91,6 @@ public class HagridWizard {
 
         this.send();
         return future;
-    }
-
-    public <T> CompletableFuture<HagridPacket<T>> sendAndWait() {
-        return this.sendAndWait((Class<T>) null);
-    }
-
-    public <T> void sendAndWait(final Class<T> payloadClass, final Consumer<HagridPacket<T>> consumer) {
-        this.sendAndWait(payloadClass).thenAccept(consumer);
-    }
-
-    public void sendAndWait(final Consumer<HagridPacket<?>> consumer) {
-        this.sendAndWait().thenAccept(consumer);
     }
 
 }

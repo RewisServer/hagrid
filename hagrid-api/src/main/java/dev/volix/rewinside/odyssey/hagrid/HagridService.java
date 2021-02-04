@@ -9,14 +9,12 @@ import java.util.logging.Logger;
  * @author Tobias Büser
  */
 public interface HagridService extends Service {
-    
+
     Logger getLogger();
 
     PropertiesConfig getConfiguration();
 
-    default HagridWizard wizard() {
-        return new HagridWizard(this);
-    }
+    PacketWizard wizard();
 
     ConnectionHandler connection();
 

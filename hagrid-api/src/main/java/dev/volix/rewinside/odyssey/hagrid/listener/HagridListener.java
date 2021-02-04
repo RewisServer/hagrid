@@ -10,8 +10,6 @@ import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
  */
 public class HagridListener {
 
-    public static final int DEFAULT_TIMEOUT_IN_SECONDS = 10;
-
     private final String topic;
     private final Direction direction;
     private final Class<?> payloadClass;

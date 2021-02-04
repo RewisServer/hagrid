@@ -41,20 +41,40 @@ public class PropertiesConfig {
         return (V) this.properties.get(key);
     }
 
+    public <V> V getOrDefault(final String key, final V defaultValue) {
+        return (V) this.properties.getOrDefault(key, defaultValue);
+    }
+
     public String getString(final String key) {
         return this.get(key);
+    }
+
+    public String getString(final String key, final String def) {
+        return this.getOrDefault(key, def);
     }
 
     public int getInt(final String key) {
         return this.get(key);
     }
 
+    public int getInt(final String key, final int def) {
+        return this.getOrDefault(key, def);
+    }
+
     public double getDouble(final String key) {
         return this.get(key);
     }
 
+    public double getDouble(final String key, final double def) {
+        return this.getOrDefault(key, def);
+    }
+
     public boolean getBoolean(final String key) {
         return this.get(key);
+    }
+
+    public boolean getBoolean(final String key, final boolean def) {
+        return this.getOrDefault(key, def);
     }
 
     public Properties getProperties() {
