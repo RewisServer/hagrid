@@ -34,7 +34,7 @@ public class PropertiesConfig {
      * @see Properties#get(Object)
      */
     public <V> V get(final String key) {
-        if (!this.properties.contains(key)) {
+        if (!this.properties.containsKey(key)) {
             throw new IllegalArgumentException(String.format("unknown configuration for key '%s'", key));
         }
 
