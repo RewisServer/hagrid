@@ -54,7 +54,7 @@ public class HagridPacketWizard implements PacketWizard {
     }
 
     @Override
-    public <T> PacketWizard payload(final T payload) {
+    public PacketWizard payload(final Object payload) {
         this.payload = payload;
         return this;
     }

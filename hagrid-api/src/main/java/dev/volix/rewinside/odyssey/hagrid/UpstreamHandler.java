@@ -1,12 +1,28 @@
 package dev.volix.rewinside.odyssey.hagrid;
 
 import dev.volix.rewinside.odyssey.hagrid.exception.HagridStreamException;
+import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 
 /**
+ * Represents the handler that handles sending packets down the line.
+ * <p>
+ * But note that we use a {@link HagridPublisher} for the actual sending part.
+ *
  * @author Tobias Büser
  */
 public interface UpstreamHandler extends Connectible {
 
+    /**
+     * Sends a packet via a publisher to the external pub/sub service.
+     *
+     * @param topic  The topic to send the packet to
+     * @param key    Just like described in {@link HagridPublisher#push(String, String, Packet)}
+     *               this key can be empty.
+     * @param packet The packet to sent.
+     * @param <T>    Type of the payload
+     *
+     * @throws HagridStreamException If the sending process fails
+     */
     <T> void send(String topic, String key, HagridPacket<T> packet) throws HagridStreamException;
 
     default <T> void send(final String topic, final HagridPacket<T> packet) throws HagridStreamException {

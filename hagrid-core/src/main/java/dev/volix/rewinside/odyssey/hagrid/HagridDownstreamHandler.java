@@ -56,7 +56,7 @@ public class HagridDownstreamHandler implements DownstreamHandler {
     }
 
     @Override
-    public <T> void receive(final String topic, final HagridPacket<T> packet) {
+    public void receive(final String topic, final HagridPacket<?> packet) {
         this.service.communication().executeListeners(topic, Direction.DOWNSTREAM, packet);
     }
 

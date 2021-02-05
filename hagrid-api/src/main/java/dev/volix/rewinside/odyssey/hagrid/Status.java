@@ -3,11 +3,22 @@ package dev.volix.rewinside.odyssey.hagrid;
 import dev.volix.rewinside.odyssey.hagrid.protocol.StatusCode;
 
 /**
+ * Represents a status that a {@link HagridPacket} has.
+ *
  * @author Tobias Büser
  */
 public class Status {
 
+    /**
+     * The status code, just like in HTTP but a little
+     * bit more lightweight.
+     */
     private final StatusCode code;
+
+    /**
+     * Optional message of the status. To not send a message
+     * just leave it empty.
+     */
     private final String message;
 
     public Status(final StatusCode code, final String message) {
