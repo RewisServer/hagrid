@@ -8,7 +8,7 @@ import dev.volix.rewinside.odyssey.hagrid.HagridResponse;
  *
  * @author Tobias Büser
  */
-public interface HagridListenerMethod {
+public interface HagridListenerMethod<T> {
 
     /**
      * @param payload  Payload of the packet that we listen on. Can be {@code null}
@@ -17,6 +17,6 @@ public interface HagridListenerMethod {
      *                 Leave untouched, if no response should be sent.
      *                 Exception is when the listener {@link HagridListener#isResponsive()}
      */
-    <T> void listen(T payload, HagridPacket<T> req, HagridResponse response);
+    void listen(T payload, HagridPacket<T> req, HagridResponse response);
 
 }

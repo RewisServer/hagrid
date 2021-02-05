@@ -76,10 +76,10 @@ public class HagridPacketWizard implements PacketWizard {
     public <T> CompletableFuture<HagridPacket<T>> sendAndWait(final Class<T> payloadClass) {
         final CompletableFuture<HagridPacket<T>> future = new CompletableFuture<>();
         final HagridListener listener = HagridListener.builder(
-            new HagridListenerMethod() {
+            new HagridListenerMethod<T>() {
                 @Override
-                public <E> void listen(final E payload, final HagridPacket<E> req, final HagridResponse response) {
-                    future.complete((HagridPacket<T>) req);
+                public void listen(final T payload, final HagridPacket<T> req, final HagridResponse response) {
+                    future.complete(req);
                 }
             }).topic(this.topic)
             .direction(Direction.DOWNSTREAM)

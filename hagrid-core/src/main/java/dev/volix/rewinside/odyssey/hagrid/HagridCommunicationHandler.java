@@ -223,9 +223,9 @@ public class HagridCommunicationHandler implements CommunicationHandler {
             final boolean isResponsive = respondsClassAnnotation != null
                 || declaredMethod.getAnnotation(HagridResponds.class) != null;
 
-            this.registerListener(HagridListener.builder(new HagridListenerMethod() {
+            this.registerListener(HagridListener.builder(new HagridListenerMethod<Object>() {
                 @Override
-                public <T> void listen(final T payload, final HagridPacket<T> req, final HagridResponse response) {
+                public void listen(final Object payload, final HagridPacket<Object> req, final HagridResponse response) {
                     try {
                         if (parameterCount == 1) {
                             declaredMethod.invoke(containingInstance, payload);
