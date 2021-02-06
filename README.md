@@ -95,6 +95,19 @@ public class StringHagridSerdes implements HagridSerdes<String> {
 }
 ```
 
+## Registering
+
+Without registering a topic, Hagrid will not subscribe to it and therefore not know when a packet goes into the topic.
+Additionally, you can not send a packet into the topic, as Hagrid needs to know how to serialize it.
+
+```java
+hagrid.communication().registerTopic("chat", new StringHagridSerdes());
+```
+
+You can see that the method expects two parameters, first is the name of the topic and second is the serdes, that we want to use for this specific topic.
+
+Important note: The topic **must not** be a topic pattern, but it will still automatically set the serdes for all subtopics as well.
+
 # Listener
 
 Now that we concluded how topics work, we can go on explaining how to listen to packets.
@@ -211,3 +224,184 @@ public void onChat(String payload, HagridPacket<?> req) {
 ```
 
 You can see, that we can listen to all subtopics of `chat-room-*` with depth 1 and that we can get the actual topic from our packet via `req.getTopic()`.
+
+# Sending packets
+
+Now that we understand how all these things work, we can finally explain a bit more on how sending packets work.
+
+## Without expected response
+
+Without expecting a response, we can just send the packet down the line. Just like we showed in the example at the beginning, we can send one like this:
+
+```java
+hagrid.wizard().topic("chat")
+    .payload("Hello there!")
+    .send();
+```
+
+If we now want to respond to another packet, we can use something like this:
+
+```java
+HagridPacket<String> question = new HagridPacket<>("How are you?");
+
+hagrid.wizard().topic("chat")
+    .respondsTo(question.getId())
+    .payload("I'm fine!")
+    .send();
+```
+
+Of course the packet `question` does not have an id at the moment, the id gets generated automatically when sending a packet. But you can see, that responding to an incoming packet is really easy!
+
+Let's do the same but instead we want to say, that we are not fine:
+
+```java
+hagrid.wizard().topic("chat")
+    .respondsTo(question.getId())
+    .status(StatusCode.INTERNAL)
+    .payload("I'm not fine ..")
+    .send();
+```
+
+That way we can give information if the request is valid and if it could be handled correctly, without modifying the payload!
+
+## With expected response
+
+All these sendings where a one way ticket, but let us have a look how we can listen for a response.
+
+```java
+hagrid.wizard().topic("chat")
+    .payload("How are you?")
+    .sendAndWait(String.class)
+    .thenAccept(stringHagridPacket -> {
+        if(stringHagridPacket.getStatus().isOk()) {
+            // "That is good to hear!"
+        } else {
+            // "I hope you get better soon .."
+        }
+    });
+```
+
+For that we have to specify which kind of payload we wait for. For our example it is always a `String`, but if the serdes of the topic is set to handle more abstract classes (e.g. `CloudPacket`), then we can pass on a specific implementation of that (e.g. `BroadcastMessageCloudPacket`).
+
+If no response is being sent back, the listener will timeout. We can handle it like this:
+
+```java
+hagrid.wizard().topic("chat")
+    .payload("How are you?")
+    .sendAndWait(String.class)
+    .thenAccept(stringHagridPacket -> {
+        if(stringHagridPacket.getStatus().isTimeout()) {
+            // we did not get a response
+            return;
+        }
+        
+        // do something
+    });
+```
+
+# Custom service implementation
+
+In the brief example at the beginning we showed how it would look like when using Grape. But sometimes you need to access an actual implementation of the `HagridService`. Or you want to create your own one.
+
+Let us have a look at that.
+
+## Preparation
+
+To prepare using a custom implementation we definitely have to implement some custom classes first.
+
+- **HagridConnectionHandler**: `ConnectionHandler` is an interface and this class is a small abstract default implementation of that. We use the connection handler to manage the connection to the external broker.
+- **HagridSubscriber**: The subscriber is **the** instance to subscribe to topics and to listen for packets. The `DownstreamHandler` will delegate the connection to it.
+- **HagridPublisher**: The publisher is **the** instance for sending packets. The `UpstreamHandler` will delegate the connection to it.
+
+## HagridService
+
+Now we can create a custom class and let it implement `HagridService`. You will see that there are specific methods that need to return one of the handlers.
+
+```java
+public class CustomHagridService implements HagridService {
+
+    private final Logger logger = Logger.getLogger(this.getClass().getName());
+    private final PropertiesConfig hagridConfig;
+    
+    private final CustomConnectionHandler connectionHandler;
+    private final HagridUpstreamHandler upstreamHandler;
+    private final HagridDownstreamHandler downstreamHandler;
+    private final HagridCommunicationHandler communicationHandler;
+
+    @Override
+    public Logger getLogger() {
+        return logger;
+    }
+
+    @Override
+    public PropertiesConfig getConfiguration() {
+        return hagridConfig;
+    }
+
+    @Override
+    public PacketWizard wizard() {
+        return new HagridPacketWizard(this);
+    }
+
+    @Override
+    public ConnectionHandler connection() {
+        return connectionHandler;
+    }
+
+    @Override
+    public UpstreamHandler upstream() {
+        return upstreamHandler;
+    }
+
+    @Override
+    public DownstreamHandler downstream() {
+        return downstreamHandler;
+    }
+
+    @Override
+    public CommunicationHandler communication() {
+        return communicationHandler;
+    }
+
+}
+```
+
+But you can see that we have default implementations for the most part. But they are of course not in the `hagrid-api` Repository, but instead in the `hagrid-core`. You can import it like that:
+
+```xml
+<dependency>
+    <groupId>dev.volix.rewinside.odyssey.hagrid</groupId>
+    <artifactId>hagrid-core</artifactId>
+    <version>1.2.0</version>
+</dependency>
+```
+
+## Kafka implementation
+
+At default we have a Kafka implementation that one can use and is recommended to do so.
+
+For that we just have to import the `hagrid-kafka` implementation
+
+```xml
+<dependency>
+    <groupId>dev.volix.rewinside.odyssey.hagrid</groupId>
+    <artifactId>hagrid-kafka</artifactId>
+    <version>0.5.2</version>
+</dependency>
+```
+
+And create a `KafkaHagridService` instance.
+
+```java
+HagridService hagrid = new KafkaHagridService("localhost:9092", "my-microservice", 
+    KafkaAuth.forBasicAuth("user", "password"));
+try {
+    hagrid.connect();
+} catch (HagridConnectionException e) {
+    // can not connect to Kafka broker
+    return;
+}
+```
+
+You can see that that way we also have to connect the service, as we do not have it prepared for us via Grape.
+And now we can use the service just like any other implementation. Under the hood, there are more things that happen, we do not need to care.
