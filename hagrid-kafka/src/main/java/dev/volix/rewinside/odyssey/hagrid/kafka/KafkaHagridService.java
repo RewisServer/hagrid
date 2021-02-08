@@ -12,10 +12,9 @@ import dev.volix.rewinside.odyssey.hagrid.HagridUpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.PacketWizard;
 import dev.volix.rewinside.odyssey.hagrid.UpstreamHandler;
 import dev.volix.rewinside.odyssey.hagrid.config.PropertiesConfig;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.UUID;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -29,7 +28,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class KafkaHagridService implements HagridService {
 
-    private Logger logger;
+    private final Logger logger;
 
     private final PropertiesConfig hagridConfig;
     private final Properties kafkaProperties;
@@ -39,12 +38,17 @@ public class KafkaHagridService implements HagridService {
     private final HagridDownstreamHandler downstreamHandler;
     private final HagridCommunicationHandler communicationHandler;
 
-    public KafkaHagridService(final List<String> brokerAddresses, final String groupId, final KafkaAuth auth, final Properties hagridConfig) {
-        this.setLogger(LogManager.getLogger(this.getClass().getSimpleName()));
-        this.hagridConfig = new HagridConfig(hagridConfig);
+    private KafkaHagridService(final List<String> brokerAddresses, final String groupId, final KafkaAuth auth,
+                               final HagridConfig hagridConfig, final Properties kafkaProperties, final Logger logger) {
+        this.hagridConfig = hagridConfig;
+        this.kafkaProperties = kafkaProperties;
+        this.logger = logger;
 
-        this.kafkaProperties = new Properties();
-        this.kafkaProperties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.join(",", brokerAddresses));
+        final String brokerAddressesString = String.join(",", brokerAddresses);
+        this.getLogger().info("Using {} broker(s): {}", brokerAddresses.size(), brokerAddressesString);
+        this.getLogger().info("Using groupId '{}'", groupId);
+
+        this.kafkaProperties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, brokerAddressesString);
         this.kafkaProperties.put(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, 3000);
         this.kafkaProperties.put(CommonClientConfigs.DEFAULT_API_TIMEOUT_MS_CONFIG, 3000);
 
@@ -64,43 +68,13 @@ public class KafkaHagridService implements HagridService {
         this.communicationHandler = new HagridCommunicationHandler(this);
     }
 
-    public KafkaHagridService(final List<String> brokerAddresses, final String groupId, final KafkaAuth auth) {
-        this(brokerAddresses, groupId, auth, new Properties());
-    }
-
-    public KafkaHagridService(final List<String> brokerAddresses, final KafkaAuth auth, final Properties hagridConfig) {
-        this(brokerAddresses, UUID.randomUUID().toString(), auth, hagridConfig);
-    }
-
-    public KafkaHagridService(final List<String> brokerAddresses, final KafkaAuth auth) {
-        this(brokerAddresses, auth, new Properties());
-    }
-
-    public KafkaHagridService(final String address, final String groupId, final KafkaAuth auth, final Properties hagridConfig) {
-        this(Collections.singletonList(address), groupId, auth, hagridConfig);
-    }
-
-    public KafkaHagridService(final String address, final String groupId, final KafkaAuth auth) {
-        this(address, groupId, auth, new Properties());
-    }
-
-    public KafkaHagridService(final String address, final KafkaAuth auth, final Properties hagridConfig) {
-        this(Collections.singletonList(address), auth, hagridConfig);
-    }
-
-    public KafkaHagridService(final String address, final KafkaAuth auth) {
-        this(address, auth, new Properties());
+    public static Builder create() {
+        return new Builder();
     }
 
     @Override
     public Logger getLogger() {
         return this.logger;
-    }
-
-    @Override
-    public void setLogger(final Logger logger) {
-        if (logger == null) throw new IllegalArgumentException("logger must not be null");
-        this.logger = logger;
     }
 
     @Override
@@ -131,6 +105,66 @@ public class KafkaHagridService implements HagridService {
     @Override
     public CommunicationHandler communication() {
         return this.communicationHandler;
+    }
+
+    public static class Builder {
+
+        private Logger logger = LogManager.getLogger(KafkaHagridService.class);
+
+        private HagridConfig hagridConfig = new HagridConfig(new Properties());
+        private Properties kafkaProperties = new Properties();
+
+        private String groupId = "";
+        private List<String> brokerAddresses = new ArrayList<>();
+        private KafkaAuth auth;
+
+        Builder() {
+
+        }
+
+        public Builder withLogger(final Logger logger) {
+            this.logger = logger;
+            return this;
+        }
+
+        public Builder withHagridConfig(final Properties properties) {
+            this.hagridConfig = new HagridConfig(properties);
+            return this;
+        }
+
+        public Builder withKafkaConfig(final Properties properties) {
+            this.kafkaProperties = properties;
+            return this;
+        }
+
+        public Builder withGroupId(final String groupId) {
+            this.groupId = groupId;
+            return this;
+        }
+
+        public Builder withRandomGroupId() {
+            return this.withGroupId("");
+        }
+
+        public Builder withBrokerAddress(final String address) {
+            this.brokerAddresses.add(address);
+            return this;
+        }
+
+        public Builder withBrokerAddresses(final List<String> addresses) {
+            this.brokerAddresses = addresses;
+            return this;
+        }
+
+        public Builder withAuth(final KafkaAuth auth) {
+            this.auth = auth;
+            return this;
+        }
+
+        public KafkaHagridService build() {
+            return new KafkaHagridService(this.brokerAddresses, this.groupId, this.auth, this.hagridConfig, this.kafkaProperties, this.logger);
+        }
+
     }
 
 }

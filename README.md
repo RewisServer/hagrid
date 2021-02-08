@@ -386,15 +386,18 @@ For that we just have to import the `hagrid-kafka` implementation
 <dependency>
     <groupId>dev.volix.rewinside.odyssey.hagrid</groupId>
     <artifactId>hagrid-kafka</artifactId>
-    <version>0.5.2</version>
+    <version>0.7.0</version>
 </dependency>
 ```
 
 And create a `KafkaHagridService` instance.
 
 ```java
-HagridService hagrid = new KafkaHagridService("localhost:9092", "my-microservice", 
-    KafkaAuth.forBasicAuth("user", "password"));
+HagridService hagrid = KafkaHagridService.create()
+    .withBrokerAddress("localhost:9092")
+    .withBrokerId("my-microservice")
+    .withAuth(KafkaAuth.forBasicAuth("user", "password"))
+    .build();
 try {
     hagrid.connect();
 } catch (HagridConnectionException e) {

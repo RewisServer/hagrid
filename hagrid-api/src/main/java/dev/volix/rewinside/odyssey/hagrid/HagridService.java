@@ -43,13 +43,6 @@ public interface HagridService extends Service {
     Logger getLogger();
 
     /**
-     * Sets the logger, that the service should use from now on.
-     *
-     * @param logger The logger to set. Must not be null
-     */
-    void setLogger(Logger logger);
-
-    /**
      * @return The configuration as properties.
      */
     PropertiesConfig getConfiguration();
