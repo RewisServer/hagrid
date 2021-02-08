@@ -34,13 +34,13 @@ public abstract class HagridConnectionHandler implements ConnectionHandler {
 
     @Override
     public void connect() throws HagridConnectionException {
-        this.service.getLogger().info("Connecting stream handler ..");
+        this.service.getLogger().info("Connecting stream handler");
         this.service.upstream().connect();
         this.service.downstream().connect();
 
         try {
             this.checkConnection();
-            this.service.getLogger().info("Stream handler successfully connected.");
+            this.service.getLogger().info("Stream handler successfully connected");
             this.handleSuccess();
         } catch (final Exception e) {
             this.handleError(e);
@@ -148,6 +148,8 @@ public abstract class HagridConnectionHandler implements ConnectionHandler {
         @Override
         public int execute() {
             if (HagridConnectionHandler.this.status != Status.INACTIVE) return 0;
+
+            HagridConnectionHandler.this.service.getLogger().info("Trying to reconnect (try #{})", HagridConnectionHandler.this.retries);
 
             try {
                 HagridConnectionHandler.this.retries++;

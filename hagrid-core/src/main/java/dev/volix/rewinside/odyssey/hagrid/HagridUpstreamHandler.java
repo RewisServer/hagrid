@@ -32,8 +32,10 @@ public class HagridUpstreamHandler implements UpstreamHandler {
 
     @Override
     public void disconnect() {
-        this.publisher.close();
-        this.publisher = null;
+        if (this.publisher != null) {
+            this.publisher.close();
+            this.publisher = null;
+        }
     }
 
     @Override
