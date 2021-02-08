@@ -21,15 +21,15 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * @author Tobias Büser
  */
 public class KafkaHagridService implements HagridService {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger;
 
     private final PropertiesConfig hagridConfig;
     private final Properties kafkaProperties;
@@ -40,6 +40,7 @@ public class KafkaHagridService implements HagridService {
     private final HagridCommunicationHandler communicationHandler;
 
     public KafkaHagridService(final List<String> brokerAddresses, final String groupId, final KafkaAuth auth, final Properties hagridConfig) {
+        this.setLogger(LogManager.getLogger(this.getClass().getSimpleName()));
         this.hagridConfig = new HagridConfig(hagridConfig);
 
         this.kafkaProperties = new Properties();
@@ -94,6 +95,12 @@ public class KafkaHagridService implements HagridService {
     @Override
     public Logger getLogger() {
         return this.logger;
+    }
+
+    @Override
+    public void setLogger(final Logger logger) {
+        if (logger == null) throw new IllegalArgumentException("logger must not be null");
+        this.logger = logger;
     }
 
     @Override

@@ -3,7 +3,7 @@ package dev.volix.rewinside.odyssey.hagrid;
 import dev.volix.lib.grape.Service;
 import dev.volix.rewinside.odyssey.hagrid.config.PropertiesConfig;
 import dev.volix.rewinside.odyssey.hagrid.exception.HagridConnectionException;
-import org.slf4j.Logger;
+import org.apache.logging.log4j.Logger;
 
 /**
  * <pre>
@@ -41,6 +41,13 @@ public interface HagridService extends Service {
      * @return The logger that we want to use. Can not be null.
      */
     Logger getLogger();
+
+    /**
+     * Sets the logger, that the service should use from now on.
+     *
+     * @param logger The logger to set. Must not be null
+     */
+    void setLogger(Logger logger);
 
     /**
      * @return The configuration as properties.
