@@ -16,19 +16,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.logging.Logger;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Tobias Büser
  */
 public class KafkaHagridService implements HagridService {
 
-    private final Logger logger = Logger.getLogger(HagridService.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final PropertiesConfig hagridConfig;
     private final Properties kafkaProperties;

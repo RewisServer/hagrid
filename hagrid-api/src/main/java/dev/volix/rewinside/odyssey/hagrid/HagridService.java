@@ -3,7 +3,7 @@ package dev.volix.rewinside.odyssey.hagrid;
 import dev.volix.lib.grape.Service;
 import dev.volix.rewinside.odyssey.hagrid.config.PropertiesConfig;
 import dev.volix.rewinside.odyssey.hagrid.exception.HagridConnectionException;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 
 /**
  * <pre>
