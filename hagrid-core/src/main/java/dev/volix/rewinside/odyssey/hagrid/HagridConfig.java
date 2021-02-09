@@ -18,12 +18,12 @@ public class HagridConfig extends PropertiesConfig {
     public HagridConfig(final Properties properties) {
         super(properties);
 
-        properties.putIfAbsent(MAX_SUBSCRIBER, 10);
-        properties.putIfAbsent(IDLE_PACKET_CLEANUP_DELAY_IN_SECONDS, 5);
-        properties.putIfAbsent(IDLE_PACKET_RETENTION_DELAY_IN_SECONDS, 30);
-        properties.putIfAbsent(LISTENER_DEFAULT_TIMEOUT_IN_SECONDS, 10);
-        properties.putIfAbsent(LISTENER_CLEANUP_DELAY_IN_SECONDS, 2);
-        properties.putIfAbsent(RECONNECT_DELAY_IN_SECONDS, 10);
+        properties.putIfAbsent(MAX_SUBSCRIBER, "10");
+        properties.putIfAbsent(IDLE_PACKET_CLEANUP_DELAY_IN_SECONDS, "5");
+        properties.putIfAbsent(IDLE_PACKET_RETENTION_DELAY_IN_SECONDS, "30");
+        properties.putIfAbsent(LISTENER_DEFAULT_TIMEOUT_IN_SECONDS, "10");
+        properties.putIfAbsent(LISTENER_CLEANUP_DELAY_IN_SECONDS, "2");
+        properties.putIfAbsent(RECONNECT_DELAY_IN_SECONDS, "10");
     }
 
 }

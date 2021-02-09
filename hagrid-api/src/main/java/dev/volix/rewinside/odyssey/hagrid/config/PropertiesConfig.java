@@ -26,19 +26,26 @@ public class PropertiesConfig {
      * if the value stored behing the key is actually null.
      *
      * @param key the key from which the value got stored with
-     * @param <V> expected type of the value
      *
      * @return the value
      *
      * @throws IllegalArgumentException if there is no mapping for given {@code key}
      * @see Properties#get(Object)
      */
-    public <V> V get(final String key) {
-        if (!this.properties.containsKey(key)) {
+    public Object get(final String key, final Class<?> type) {
+        final String value = this.properties.getProperty(key);
+        if (value == null) {
             throw new IllegalArgumentException(String.format("unknown configuration for key '%s'", key));
         }
-
-        return (V) this.properties.get(key);
+        if (type == String.class)
+            return value;
+        if (type == Boolean.class)
+            return Boolean.parseBoolean(value);
+        if (type == Integer.class)
+            return Integer.parseInt(value);
+        if (type == Double.class)
+            return Double.parseDouble(value);
+        throw new IllegalArgumentException(String.format("unknown type class '%s'", type.getName()));
     }
 
     public <V> V getOrDefault(final String key, final V defaultValue) {
@@ -46,35 +53,55 @@ public class PropertiesConfig {
     }
 
     public String getString(final String key) {
-        return this.get(key);
+        return (String) this.get(key, String.class);
     }
 
     public String getString(final String key, final String def) {
-        return this.getOrDefault(key, def);
+        try {
+            return (String) this.get(key, String.class);
+        } catch (final Exception ex) {
+            // do nothing
+        }
+        return def;
     }
 
     public int getInt(final String key) {
-        return this.get(key);
+        return (Integer) this.get(key, Integer.class);
     }
 
     public int getInt(final String key, final int def) {
-        return this.getOrDefault(key, def);
+        try {
+            return (Integer) this.get(key, Integer.class);
+        } catch (final Exception ex) {
+            // do nothing
+        }
+        return def;
     }
 
     public double getDouble(final String key) {
-        return this.get(key);
+        return (Double) this.get(key, Double.class);
     }
 
     public double getDouble(final String key, final double def) {
-        return this.getOrDefault(key, def);
+        try {
+            return (Integer) this.get(key, Integer.class);
+        } catch (final Exception ex) {
+            // do nothing
+        }
+        return def;
     }
 
     public boolean getBoolean(final String key) {
-        return this.get(key);
+        return (Boolean) this.get(key, Boolean.class);
     }
 
     public boolean getBoolean(final String key, final boolean def) {
-        return this.getOrDefault(key, def);
+        try {
+            return (Boolean) this.get(key, Boolean.class);
+        } catch (final Exception ex) {
+            // do nothing
+        }
+        return def;
     }
 
     public Properties getProperties() {
