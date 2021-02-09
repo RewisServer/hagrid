@@ -59,7 +59,7 @@ public class HagridTopic<T> implements Comparable<HagridTopic<?>> {
     }
 
     public HagridTopic(final String pattern, final HagridSerdes<T> serdes) {
-        this(pattern, serdes, TopicProperties.create().build());
+        this(pattern, serdes, TopicProperties.newBuilder().build());
     }
 
     public Pattern getRegexPattern() {
