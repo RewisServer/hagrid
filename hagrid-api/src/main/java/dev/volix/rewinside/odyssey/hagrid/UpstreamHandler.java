@@ -29,4 +29,22 @@ public interface UpstreamHandler extends Connectible {
         this.send(topic, "", packet);
     }
 
+    /**
+     * Checks if a packet with given id is currently idling.
+     * This operation should not be thread safe and therefore
+     * not be handled as such.
+     * <p>
+     * Idling means that the packet got sent into the topic, but not received again,
+     * which should be the case in a pub/sub system.
+     * <p>
+     * But notice that this could also happen when there is such a thing
+     * that only one consumer gets the packet. It does not mean that
+     * when the packet is idling, that it did not get sent correctly. Handle with care.
+     *
+     * @param packetId The id of the packet
+     *
+     * @return If the packet is idling.
+     */
+    boolean isIdling(String packetId);
+
 }

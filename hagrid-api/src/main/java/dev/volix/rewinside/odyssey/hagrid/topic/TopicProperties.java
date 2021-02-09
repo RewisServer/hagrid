@@ -18,8 +18,29 @@ public class TopicProperties {
      */
     private final boolean shouldRunInParallel;
 
-    private TopicProperties(final boolean shouldRunInParallel) {
+    /**
+     * This flag determines if sent packets from this
+     * instance to this topic will also be handled
+     * as incoming packet by the topic.
+     * <p>
+     * So if this flag is {@code false} then the service
+     * will not receive packets that have been sent by the
+     * service itself.
+     */
+    private final boolean receiveSentPackets;
+
+    /**
+     * If {@code false} packets that are in the topic
+     * before the service starts will be discarded and not handled.
+     * <p>
+     * This will work with a timestamp check on the received packets.
+     */
+    private final boolean receiveStalePackets;
+
+    private TopicProperties(final boolean shouldRunInParallel, final boolean receiveSentPackets, final boolean receiveStalePackets) {
         this.shouldRunInParallel = shouldRunInParallel;
+        this.receiveSentPackets = receiveSentPackets;
+        this.receiveStalePackets = receiveStalePackets;
     }
 
     public static TopicProperties.Builder create() {
@@ -30,9 +51,19 @@ public class TopicProperties {
         return this.shouldRunInParallel;
     }
 
+    public boolean receivesSentPackets() {
+        return this.receiveSentPackets;
+    }
+
+    public boolean receivesStalePackets() {
+        return this.receiveStalePackets;
+    }
+
     public static class Builder {
 
         private boolean shouldRunInParallel = true;
+        private boolean receiveSentPackets = false;
+        private boolean receiveStalePackets = true;
 
         private Builder() {
         }
@@ -42,8 +73,18 @@ public class TopicProperties {
             return this;
         }
 
+        public Builder receiveSentPackets(final boolean flag) {
+            this.receiveSentPackets = flag;
+            return this;
+        }
+
+        public Builder receiveStalePackets(final boolean flag) {
+            this.receiveStalePackets = flag;
+            return this;
+        }
+
         public TopicProperties build() {
-            return new TopicProperties(this.shouldRunInParallel);
+            return new TopicProperties(this.shouldRunInParallel, this.receiveSentPackets, this.receiveStalePackets);
         }
 
     }

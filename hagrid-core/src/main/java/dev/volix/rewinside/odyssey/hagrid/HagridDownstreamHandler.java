@@ -3,6 +3,7 @@ package dev.volix.rewinside.odyssey.hagrid;
 import dev.volix.rewinside.odyssey.hagrid.listener.Direction;
 import dev.volix.rewinside.odyssey.hagrid.protocol.Packet;
 import dev.volix.rewinside.odyssey.hagrid.topic.HagridTopic;
+import dev.volix.rewinside.odyssey.hagrid.topic.TopicProperties;
 import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import dev.volix.rewinside.odyssey.hagrid.util.StoppableTask;
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ public class HagridDownstreamHandler implements DownstreamHandler {
         this.createSubscriberFunction = createSubscriberFunction;
 
         this.maxSubscriber = service.getConfiguration().getInt(HagridConfig.MAX_SUBSCRIBER);
-        this.threadPool = Executors.newFixedThreadPool(this.maxSubscriber, new DaemonThreadFactory());
+        this.threadPool = Executors.newFixedThreadPool(this.maxSubscriber, new DaemonThreadFactory("Subscriber-"));
     }
 
     @Override
@@ -57,7 +58,9 @@ public class HagridDownstreamHandler implements DownstreamHandler {
 
     @Override
     public void receive(final String topic, final HagridPacket<?> packet) {
-        this.service.getLogger().trace("Received packet: {}", packet);
+        this.service.getLogger().trace("Received packet: {}",
+            packet == null ? "null"
+                : packet.toString().replaceAll("\n", ""));
         this.service.communication().executeListeners(topic, Direction.DOWNSTREAM, packet);
     }
 
@@ -135,8 +138,20 @@ public class HagridDownstreamHandler implements DownstreamHandler {
                     // we just silently do nothing ..
                     return 0;
                 }
+                final TopicProperties topicProperties = registeredTopic.getProperties();
+
+                if (!topicProperties.receivesStalePackets()
+                    && record.getTimestamp() < this.service.connection().getLastSuccess()) {
+                    // packet is stale and we do not want stale packets
+                    return 0;
+                }
 
                 final Packet packet = record.getPacket();
+                if (!topicProperties.receivesSentPackets()
+                    && this.service.upstream().isIdling(packet.getId())) {
+                    // we sent this packet but we do not want sent packets.
+                    return 0;
+                }
 
                 final Packet.Payload packetPayload = packet.getPayload();
                 final byte[] payloadData = packetPayload.getValue().toByteArray();

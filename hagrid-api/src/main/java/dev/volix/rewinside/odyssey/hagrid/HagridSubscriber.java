@@ -74,9 +74,16 @@ public interface HagridSubscriber {
         private final String topic;
         private final Packet packet;
 
-        public Record(final String topic, final Packet packet) {
+        /**
+         * Timestamp not when the record got received, but more
+         * when the record got added to the message broker.
+         */
+        private final long timestamp;
+
+        public Record(final String topic, final Packet packet, final long timestamp) {
             this.topic = topic;
             this.packet = packet;
+            this.timestamp = timestamp;
         }
 
         public String getTopic() {
@@ -87,6 +94,9 @@ public interface HagridSubscriber {
             return this.packet;
         }
 
+        public long getTimestamp() {
+            return this.timestamp;
+        }
     }
 
 }

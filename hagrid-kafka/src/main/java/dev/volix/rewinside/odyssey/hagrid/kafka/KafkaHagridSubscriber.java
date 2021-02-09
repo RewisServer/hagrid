@@ -13,6 +13,7 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.record.TimestampType;
 
 /**
  * @author Tobias Büser
@@ -78,7 +79,9 @@ public class KafkaHagridSubscriber implements HagridSubscriber {
 
         final List<Record> records = new ArrayList<>();
         for (final ConsumerRecord<String, Packet> consumerRecord : consumerRecords) {
-            records.add(new Record(consumerRecord.topic(), consumerRecord.value()));
+            final long timestamp = consumerRecord.timestampType() != TimestampType.NO_TIMESTAMP_TYPE
+                ? consumerRecord.timestamp() : System.currentTimeMillis();
+            records.add(new Record(consumerRecord.topic(), consumerRecord.value(), timestamp));
         }
 
         return records;
