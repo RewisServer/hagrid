@@ -191,7 +191,7 @@ public class HagridCommunicationHandler implements CommunicationHandler {
     }
 
     @Override
-    public void registerListeners(final Object containingInstance) {
+    public void registerListeners(final String topic, final Object containingInstance) {
         final Class<?> clazz = containingInstance.getClass();
         final HagridListens listensClassAnnotation = clazz.getAnnotation(HagridListens.class);
         final HagridResponds respondsClassAnnotation = clazz.getAnnotation(HagridResponds.class);
@@ -209,8 +209,10 @@ public class HagridCommunicationHandler implements CommunicationHandler {
             final Class<?> parameter = declaredMethod.getParameterTypes()[0];
 
             // if the enclosing class already contains such an annotation
-            // we can override specific values if necessary
-            final String topic = listensClassAnnotation != null ?
+            // we can override specific values if necessary.
+            // BUT if the method itself provides a topic, this topic will
+            // always be picked, its priority is higher.
+            final String actualTopic = topic != null ? topic : listensClassAnnotation != null ?
                 listensClassAnnotation.topic().isEmpty() ? annotation.topic() : listensClassAnnotation.topic()
                 : annotation.topic();
             final Direction direction = listensClassAnnotation != null ?
@@ -240,7 +242,7 @@ public class HagridCommunicationHandler implements CommunicationHandler {
                         throw new HagridListenerExecutionException(req.getTopic(), parameter, e);
                     }
                 }
-            }).topic(topic).direction(direction).payloadClass(parameter)
+            }).topic(actualTopic).direction(direction).payloadClass(parameter)
                 .priority(priority).responsive(isResponsive).build());
         }
     }

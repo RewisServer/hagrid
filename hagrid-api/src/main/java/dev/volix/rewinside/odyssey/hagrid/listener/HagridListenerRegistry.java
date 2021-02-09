@@ -46,9 +46,23 @@ public interface HagridListenerRegistry {
      * all methods that are fit to be registered as a listener,
      * just like it is described in {@link HagridListens}.
      *
+     * @param topic              The topic to register all found listener to
      * @param containingInstance The instance of the class.
      */
-    void registerListeners(Object containingInstance);
+    void registerListeners(String topic, Object containingInstance);
+
+    default void registerListeners(final Object containingInstance) {
+        this.registerListeners(null, containingInstance);
+    }
+
+    /**
+     * @see #registerListeners(String, Object)
+     */
+    default void registerManyListeners(final String topic, final Object... containingInstances) {
+        for (final Object containingInstance : containingInstances) {
+            this.registerListeners(topic, containingInstance);
+        }
+    }
 
     /**
      * @see #registerListeners(Object)
