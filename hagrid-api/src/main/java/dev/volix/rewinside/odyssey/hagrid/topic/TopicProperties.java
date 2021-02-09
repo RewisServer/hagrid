@@ -43,7 +43,7 @@ public class TopicProperties {
         this.receiveStalePackets = receiveStalePackets;
     }
 
-    public static TopicProperties.Builder create() {
+    public static TopicProperties.Builder newBuilder() {
         return new Builder();
     }
 

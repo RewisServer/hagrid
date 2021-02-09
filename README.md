@@ -108,6 +108,17 @@ You can see that the method expects two parameters, first is the name of the top
 
 Important note: The topic **must not** be a topic pattern, but it will still automatically set the serdes for all subtopics as well.
 
+## Options
+
+If you want to have more options for the specific topic, you can use the method as follows:
+
+```java
+hagrid.communication().registerTopic("chat", new StringHagridSerdes(),
+    TopicPropertes().newBuilder().receiveStalePackets(false).build())
+```
+
+That way you can configure the topic with different options. In this case the topic will not receive packets that have been sent while the service was inactive.
+
 # Listener
 
 Now that we concluded how topics work, we can go on explaining how to listen to packets.
