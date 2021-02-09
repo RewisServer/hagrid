@@ -49,7 +49,7 @@ public interface HagridTopicRegistry {
     void registerTopic(String pattern, HagridSerdes<?> serdes, TopicProperties properties);
 
     default void registerTopic(final String pattern, final HagridSerdes<?> serdes) {
-        this.registerTopic(pattern, serdes, TopicProperties.create().build());
+        this.registerTopic(pattern, serdes, TopicProperties.newBuilder().build());
     }
 
     void unregisterTopic(String pattern);
