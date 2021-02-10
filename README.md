@@ -223,6 +223,41 @@ public void onChat(String payload) {
 
 Now if the payload is a number, everything is fine and we would respond with the status **OK**, otherwise we would automatically respond with **INTERNAL** and a message specifying the exception.
 
+Otherwise if we want to specify a status ourselves, we can use the following:
+
+```java
+@HagridListens(topic = "chat")
+public void onChat(String payload, HagridPacket<?> req, HagridResponse res) {
+    try {
+        res.status(StatusCode.OK, "everything is fine.");
+    } catch (NumberFormatException ex) {
+        res.status(StatusCode.BAD_REQUEST, "you have not sent a number");
+        return;
+    }
+    System.out.println("We received a number: " + someNumber);
+}
+```
+
+That way after the listener has been executed, it will automatically construct a needed response with the status given.
+To add some kind of more detailed description of what happened, you can use something called `subcodes`.
+
+```java
+@HagridListens(topic = "chat")
+public void onChat(String payload, HagridPacket<?> req, HagridResponse res) {
+    try {
+        res.status(StatusCode.OK, "everything is fine.");
+    } catch (NumberFormatException ex) {
+        // adding a subcode as an enum or an int to the status
+        res.status(StatusCode.BAD_REQUEST, ChatSubCode.NOT_A_NUMBER, "you have not sent a number");
+        return;
+    }
+    System.out.println("We received a number: " + someNumber);
+}
+```
+
+In this case `ChatSubCode` is an enum created by the application, which then gets transformed into an int by the ordinal - more specifically `ordinal() + 1` as the subcode starts counting at 1.
+Now the receiver of the response can also use `ChatSubCode` to get a better idea of what `BAD_REQUEST` means specifically without having to map the message to a specific status.
+
 ## Taking advantage of topic patterns
 
 As explained above topics on Hagrid's site can be seen as a pattern. This can become useful if we e.g. have chatrooms and we want to listen to all of them.

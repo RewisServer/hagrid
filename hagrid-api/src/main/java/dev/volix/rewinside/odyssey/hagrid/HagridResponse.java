@@ -21,9 +21,26 @@ public class HagridResponse {
     private Status status;
     private Object payload;
 
-    public HagridResponse status(final StatusCode code, final String message) {
-        this.status = new Status(code, message);
+    public HagridResponse status(final StatusCode code, final int subcode, final String message) {
+        this.status = new Status(code, subcode, message);
         return this;
+    }
+
+    public HagridResponse status(final StatusCode code, final Enum<?> subcode, final String message) {
+        this.status = new Status(code, subcode.ordinal() + 1, message);
+        return this;
+    }
+
+    public HagridResponse status(final StatusCode code, final int subcode) {
+        return this.status(code, subcode, "");
+    }
+
+    public HagridResponse status(final StatusCode code, final Enum<?> subcode) {
+        return this.status(code, subcode.ordinal() + 1, "");
+    }
+
+    public HagridResponse status(final StatusCode code, final String message) {
+        return this.status(code, 0, message);
     }
 
     public HagridResponse status(final StatusCode code) {
