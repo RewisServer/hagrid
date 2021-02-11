@@ -161,7 +161,8 @@ public class HagridDownstreamHandler implements DownstreamHandler {
                         packetPayload.getTypeUrl(),
                         packetPayload.getValue().toByteArray()
                     );
-                final Status status = new Status(packet.getStatus().getCode(), packet.getStatus().getMessage());
+                final Status status = new Status(packet.getStatus().getCode(),
+                    packet.getStatus().getSubcode(), packet.getStatus().getMessage());
 
                 // if this throws an error, the record does not get successfuly consumed
                 this.service.downstream().receive(recordTopic, new HagridPacket<>(

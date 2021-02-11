@@ -153,7 +153,7 @@ public class HagridCommunicationHandler implements CommunicationHandler {
                 final Object responsePayload = response.getPayload();
 
                 this.service.wizard().respondsTo(packet)
-                    .status(responseStatus.getCode(), responseStatus.getMessage())
+                    .status(responseStatus.getCode(), responseStatus.getSubcode(), responseStatus.getMessage())
                     .payload(responsePayload)
                     .send();
             }

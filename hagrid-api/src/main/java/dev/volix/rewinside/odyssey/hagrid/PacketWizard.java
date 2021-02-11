@@ -41,9 +41,18 @@ public interface PacketWizard {
      * Sets the status of the packet.
      *
      * @param code    The status code. Default is {@link StatusCode#OK}
+     * @param subcode The subcode. Default is 0.
      * @param message The message. Defaut is empty.
      */
-    PacketWizard status(final StatusCode code, final String message);
+    PacketWizard status(final StatusCode code, final int subcode, final String message);
+
+    default PacketWizard status(final StatusCode code, final String message) {
+        return this.status(code, 0, "");
+    }
+
+    default PacketWizard status(final StatusCode code, final int subcode) {
+        return this.status(code, subcode, "");
+    }
 
     default PacketWizard status(final StatusCode code) {
         return this.status(code, "");

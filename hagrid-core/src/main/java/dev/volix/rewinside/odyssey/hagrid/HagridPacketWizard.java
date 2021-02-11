@@ -48,8 +48,8 @@ public class HagridPacketWizard implements PacketWizard {
     }
 
     @Override
-    public PacketWizard status(final StatusCode code, final String message) {
-        this.status = new Status(code, message);
+    public PacketWizard status(final StatusCode code, final int subcode, final String message) {
+        this.status = new Status(code, subcode, message);
         return this;
     }
 
