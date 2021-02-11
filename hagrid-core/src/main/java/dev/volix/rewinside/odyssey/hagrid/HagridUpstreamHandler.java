@@ -79,6 +79,7 @@ public class HagridUpstreamHandler implements UpstreamHandler {
             .setRequestId(packet.getRequestId())
             .setStatus(Status.newBuilder()
                 .setCode(packet.getStatus().getCode())
+                .setSubcode(packet.getStatus().getSubcode())
                 .setMessage(packet.getStatus().getMessage() == null ? "" : packet.getStatus().getMessage())
                 .build())
             .build();
