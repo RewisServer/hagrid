@@ -149,7 +149,7 @@ public class HagridPacket<T> {
 
     @Override
     public String toString() {
-        return "HagridPacket{" +
+        return "HagridPacket(" + (this.payload == null ? "null" : this.payload.getClass().getName()) + "){" +
             "topic='" + this.topic + '\'' +
             ", id='" + this.id + '\'' +
             ", requestId='" + this.requestId + '\'' +
