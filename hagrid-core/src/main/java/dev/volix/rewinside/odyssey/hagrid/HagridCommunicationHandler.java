@@ -136,6 +136,8 @@ public class HagridCommunicationHandler implements CommunicationHandler {
                 listener.execute(payload, packet, response);
             } catch (final HagridListenerExecutionException ex) {
                 executionError = ex;
+
+                this.service.getLogger().warn("error during listener execution", ex);
             }
 
             if (executionError != null && listener.isResponsive()) {
