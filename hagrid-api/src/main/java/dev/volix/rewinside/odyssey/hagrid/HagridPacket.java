@@ -78,6 +78,10 @@ public class HagridPacket<T> {
         this(StatusCode.OK, payload);
     }
 
+    public HagridPacket(final String topic, final T payload) {
+        this(topic, new Status(StatusCode.OK, ""), payload);
+    }
+
     /**
      * Creates a new instance with the {@link #payload} resulting
      * from given map function.

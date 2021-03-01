@@ -11,6 +11,7 @@ import dev.volix.rewinside.odyssey.hagrid.util.DaemonThreadFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -82,8 +83,8 @@ public class HagridUpstreamHandler implements UpstreamHandler {
 
         final Packet protoPacket = Packet.newBuilder()
             .setPayload(packetPayload)
-            .setId(packet.getId())
-            .setRequestId(packet.getRequestId())
+            .setId(packet.getId() == null ? UUID.randomUUID().toString() : "")
+            .setRequestId(packet.getRequestId() == null ? "" : packet.getRequestId())
             .setStatus(Status.newBuilder()
                 .setCode(packet.getStatus().getCode())
                 .setSubcode(packet.getStatus().getSubcode())

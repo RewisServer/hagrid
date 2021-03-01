@@ -24,7 +24,8 @@ public class HagridDownstreamHandler implements DownstreamHandler {
     private final Supplier<HagridSubscriber> createSubscriberFunction;
 
     private final int maxSubscriber;
-    private final ExecutorService threadPool;
+    private final ExecutorService subscriberThreadPool;
+    private final ExecutorService listenerThreadPool;
 
     private final List<ConsumerTask> consumerTasks = new ArrayList<>();
     private final Map<HagridTopic<?>, ConsumerTask> topicsToConsumer = new HashMap<>();
@@ -34,7 +35,8 @@ public class HagridDownstreamHandler implements DownstreamHandler {
         this.createSubscriberFunction = createSubscriberFunction;
 
         this.maxSubscriber = service.getConfiguration().getInt(HagridConfig.MAX_SUBSCRIBER);
-        this.threadPool = Executors.newFixedThreadPool(this.maxSubscriber, new DaemonThreadFactory("Subscriber-"));
+        this.subscriberThreadPool = Executors.newFixedThreadPool(this.maxSubscriber, new DaemonThreadFactory("Subscriber-"));
+        this.listenerThreadPool = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Listener-"));
     }
 
     @Override
@@ -61,7 +63,13 @@ public class HagridDownstreamHandler implements DownstreamHandler {
         this.service.getLogger().trace("Received packet: {}",
             packet == null ? "null"
                 : packet.toString().replaceAll("\n", ""));
-        this.service.communication().executeListeners(topic, Direction.DOWNSTREAM, packet);
+        this.listenerThreadPool.execute(() -> {
+            try {
+                this.service.communication().executeListeners(topic, Direction.DOWNSTREAM, packet);
+            } catch (final Exception ex) {
+                this.service.getLogger().warn("error during listener execution", ex);
+            }
+        });
     }
 
     @Override
@@ -74,7 +82,7 @@ public class HagridDownstreamHandler implements DownstreamHandler {
         subscriber.subscribe(topic);
 
         final ConsumerTask task = new ConsumerTask(this.service, subscriber);
-        this.threadPool.execute(task);
+        this.subscriberThreadPool.execute(task);
 
         this.consumerTasks.add(task);
         this.topicsToConsumer.put(topic, task);
