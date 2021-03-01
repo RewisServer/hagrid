@@ -156,11 +156,18 @@ public class HagridDownstreamHandler implements DownstreamHandler {
                 final Packet.Payload packetPayload = packet.getPayload();
                 final byte[] payloadData = packetPayload.getValue().toByteArray();
 
-                final Object payload = payloadData.length == 0 ? null :
-                    registeredTopic.getSerdes().deserialize(
-                        packetPayload.getTypeUrl(),
-                        packetPayload.getValue().toByteArray()
-                    );
+                Object payload = null;
+                try {
+                    payload = payloadData.length == 0 ? null :
+                        registeredTopic.getSerdes().deserialize(
+                            packetPayload.getTypeUrl(),
+                            packetPayload.getValue().toByteArray()
+                        );
+                } catch (final Exception ex) {
+                    // if an error occurs during the serdes
+                    this.service.getLogger().warn("Error during deserialization", ex);
+                    return 0;
+                }
                 final Status status = new Status(packet.getStatus().getCode(),
                     packet.getStatus().getSubcode(), packet.getStatus().getMessage());
 

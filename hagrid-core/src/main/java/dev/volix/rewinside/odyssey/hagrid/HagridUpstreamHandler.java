@@ -66,12 +66,19 @@ public class HagridUpstreamHandler implements UpstreamHandler {
         }
 
         final T payload = packet.getPayloadOrNull();
-        final Packet.Payload packetPayload = payload == null
-            ? Packet.Payload.newBuilder().setValue(ByteString.copyFrom(new byte[] {})).build()
-            : Packet.Payload.newBuilder()
-            .setTypeUrl(payload.getClass().getTypeName())
-            .setValue(ByteString.copyFrom(registeredTopic.getSerdes().serialize(payload)))
-            .build();
+        Packet.Payload packetPayload = null;
+        try {
+            packetPayload = payload == null
+                ? Packet.Payload.newBuilder().setValue(ByteString.copyFrom(new byte[] {})).build()
+                : Packet.Payload.newBuilder()
+                .setTypeUrl(payload.getClass().getTypeName())
+                .setValue(ByteString.copyFrom(registeredTopic.getSerdes().serialize(payload)))
+                .build();
+        } catch (final Exception ex) {
+            // exception during serdes
+            this.service.getLogger().warn("Error during serialization", ex);
+            return;
+        }
 
         final Packet protoPacket = Packet.newBuilder()
             .setPayload(packetPayload)
