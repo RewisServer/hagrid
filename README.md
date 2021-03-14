@@ -1,5 +1,3 @@
-# New Hagrid README.md
-
 # Hagrid Java
 
 Default Java and Kafka implementation for Hagrid.
